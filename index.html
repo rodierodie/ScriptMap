@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScriptMap - Визуальный редактор сценариев</title>
+    <meta name="description" content="Современный нодовый редактор для создания и визуализации сценариев любого типа">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'scriptmap': {
+                            blue: '#2563eb',
+                            gray: '#f8fafc',
+                            dark: '#1e293b',
+                            purple: '#7c3aed',
+                            green: '#10b981',
+                            yellow: '#f59e0b',
+                            red: '#ef4444'
+                        }
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-in-out',
+                        'slide-in': 'slideIn 0.3s ease-out',
+                        'pulse-soft': 'pulseSoft 2s infinite'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        },
+                        slideIn: {
+                            '0%': { transform: 'translateX(100%)', opacity: '0' },
+                            '100%': { transform: 'translateX(0)', opacity: '1' }
+                        },
+                        pulseSoft: {
+                            '0%, 100%': { opacity: '0.5' },
+                            '50%': { opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- External Libraries -->
+    <script src="https://unpkg.com/interactjs/dist/interact.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .card {
+            transition: all 0.2s ease;
+            transform-origin: center;
+        }
+        
+        .card:hover {
+            transform: scale(1.02);
+        }
+        
+        .card.selected {
+            box-shadow: 0 0 0 2px #2563eb, 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-type-scene {
+            border-left: 4px solid #2563eb;
+        }
+        
+        .card-type-character {
+            border-left: 4px solid #10b981;
+        }
+        
+        .card-type-note {
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .card-type-screen {
+            border-left: 4px solid #7c3aed;
+        }
+        
+        .connection-line {
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+            transition: all 0.2s ease;
+        }
+        
+        .connection-line:hover {
+            stroke-width: 3;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
+        }
+        
+        .connection-target {
+            box-shadow: 0 0 0 2px #10b981 !important;
+            animation: pulse-soft 1s infinite;
+        }
+        
+        .toolbar-button {
+            transition: all 0.2s ease;
+        }
+        
+        .toolbar-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .canvas-grid {
+            background-image: 
+                radial-gradient(circle, #e2e8f0 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        .notification {
+            backdrop-filter: blur(8px);
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-scriptmap-gray h-screen overflow-hidden select-none">
+    <div id="app" class="h-screen flex flex-col">
+        <!-- Верхняя панель инструментов -->
+        <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between z-20">
+            <div class="flex items-center space-x-6">
+                <!-- Логотип и название -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-br from-scriptmap-blue to-scriptmap-purple rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <h1 class="text-xl font-semibold text-gray-800">ScriptMap</h1>
+                    <span class="text-xs bg-scriptmap-blue text-white px-2 py-1 rounded-full">MVP</span>
+                </div>
+                
+                <!-- Основные действия -->
+                <div class="flex items-center space-x-2">
+                    <button id="add-card-btn" class="toolbar-button px-4 py-2 bg-scriptmap-blue text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2 text-sm font-medium">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        <span>Карточка</span>
+                    </button>
+                    
+                    <button id="zoom-fit-btn" class="toolbar-button px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center space-x-2 text-sm font-medium">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                        </svg>
+                        <span>Показать все</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Правая панель -->
+            <div class="flex items-center space-x-2">
+                <!-- Статус сохранения -->
+                <div id="save-status" class="text-xs text-gray-500 px-2 py-1">
+                    <span class="flex items-center space-x-1">
+                        <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                        <span>Сохранено</span>
+                    </span>
+                </div>
+                
+                <!-- Действия с проектом -->
+                <button id="import-btn" class="toolbar-button px-3 py-2 bg-scriptmap-yellow text-white rounded-lg hover:bg-yellow-600 text-sm font-medium">
+                    Импорт
+                </button>
+                
+                <button id="export-btn" class="toolbar-button px-3 py-2 bg-scriptmap-green text-white rounded-lg hover:bg-green-600 text-sm font-medium">
+                    Экспорт
+                </button>
+                
+                <button id="save-btn" class="toolbar-button px-3 py-2 bg-scriptmap-purple text-white rounded-lg hover:bg-purple-600 text-sm font-medium">
+                    Сохранить
+                </button>
+            </div>
+        </header>
+
+        <!-- Рабочая область -->
+        <main class="flex-1 relative overflow-hidden">
+            <!-- Мини-карта навигации (будущая фича) -->
+            <div id="minimap" class="absolute top-4 right-4 w-48 h-32 bg-white rounded-lg shadow-lg border z-30 hidden">
+                <div class="p-2 border-b">
+                    <h3 class="text-xs font-medium text-gray-600">Навигация</h3>
+                </div>
+                <div class="p-2">
+                    <div class="w-full h-20 bg-gray-100 rounded"></div>
+                </div>
+            </div>
+            
+            <!-- Панель инструментов карточек -->
+            <div id="card-types-panel" class="absolute top-4 left-4 bg-white rounded-lg shadow-lg border z-30 p-3">
+                <h3 class="text-xs font-medium text-gray-600 mb-2">Типы карточек</h3>
+                <div class="space-y-2">
+                    <button class="card-type-btn w-full flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-50 text-sm" data-type="scene">
+                        <div class="w-3 h-3 bg-scriptmap-blue rounded"></div>
+                        <span>Сцена</span>
+                    </button>
+                    <button class="card-type-btn w-full flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-50 text-sm" data-type="character">
+                        <div class="w-3 h-3 bg-scriptmap-green rounded"></div>
+                        <span>Персонаж</span>
+                    </button>
+                    <button class="card-type-btn w-full flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-50 text-sm" data-type="note">
+                        <div class="w-3 h-3 bg-scriptmap-yellow rounded"></div>
+                        <span>Заметка</span>
+                    </button>
+                    <button class="card-type-btn w-full flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-50 text-sm" data-type="screen">
+                        <div class="w-3 h-3 bg-scriptmap-purple rounded"></div>
+                        <span>Экран</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Основной холст -->
+            <div id="canvas-container" class="w-full h-full relative canvas-grid">
+                <!-- SVG слой для связей -->
+                <svg id="connections-layer" class="absolute inset-0 pointer-events-none z-10" style="overflow: visible;">
+                    <defs>
+                        <!-- Градиенты для стрелок -->
+                        <linearGradient id="connectionGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.8" />
+                            <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                        </linearGradient>
+                        
+                        <!-- Маркер стрелки -->
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                                refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="url(#connectionGradient)" />
+                        </marker>
+                    </defs>
+                </svg>
+                
+                <!-- Слой карточек -->
+                <div id="canvas" class="absolute inset-0 transform-gpu transition-transform duration-200 ease-out">
+                    <!-- Карточки будут добавляться сюда динамически -->
+                </div>
+                
+                <!-- Центральная подсказка для новых пользователей -->
+                <div id="welcome-hint" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div class="bg-white rounded-xl shadow-lg border p-8 max-w-md text-center animate-fade-in">
+                        <div class="w-16 h-16 bg-gradient-to-br from-scriptmap-blue to-scriptmap-purple rounded-full mx-auto mb-4 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <h2 class="text-xl font-semibold text-gray-800 mb-2">Добро пожаловать в ScriptMap!</h2>
+                        <p class="text-gray-600 mb-4">Создайте свою первую карточку двойным кликом по холсту или нажмите кнопку "Карточка"</p>
+                        <div class="flex justify-center space-x-4 text-sm text-gray-500">
+                            <span>• Перетаскивайте карточки</span>
+                            <span>• Соединяйте идеи</span>
+                            <span>• Масштабируйте колесиком</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Информационная панель внизу -->
+            <div id="status-bar" class="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg border px-4 py-2 text-sm text-gray-600 z-30">
+                <span id="zoom-level">Масштаб: 100%</span>
+                <span class="mx-2">•</span>
+                <span id="cards-count">Карточек: 0</span>
+                <span class="mx-2">•</span>
+                <span id="connections-count">Связей: 0</span>
+            </div>
+        </main>
+    </div>
+
+    <!-- Контекстное меню карточки (создается динамически) -->
+    <div id="card-menu-template" class="hidden">
+        <div class="bg-white shadow-xl rounded-lg border p-2 z-50 min-w-36">
+            <div class="space-y-1">
+                <button class="duplicate-card w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                    <span>Дублировать</span>
+                </button>
+                <button class="connect-card w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 rounded flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                    <span>Соединить</span>
+                </button>
+                <hr class="my-1 border-gray-200">
+                <button class="delete-card w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    <span>Удалить</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Скрытый input для импорта файлов -->
+    <input type="file" id="file-import" accept=".json" style="display: none;">
+
+    <!-- Подключение скриптов -->
+    <script src="src/js/utils.js"></script>
+    <script src="src/js/canvas.js"></script>
+    <script src="src/js/cards.js"></script>
+    <script src="src/js/app.js"></script>
+    
+    <script>
+        // Инициализация приложения
+        document.addEventListener('DOMContentLoaded', function() {
+            window.scriptMapApp = new ScriptMapApp();
+        });
+        
+        // Предотвращение контекстного меню браузера
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+        
+        // Обработка горячих клавиш
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+S для сохранения
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                if (window.scriptMapApp) {
+                    window.scriptMapApp.saveToStorage();
+                }
+            }
+            
+            // Delete для удаления выбранной карточки
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                if (window.scriptMapApp && window.scriptMapApp.selectedCard) {
+                    e.preventDefault();
+                    window.scriptMapApp.deleteCard(window.scriptMapApp.selectedCard);
+                }
+            }
+            
+            // Escape для отмены режима соединения
+            if (e.key === 'Escape') {
+                if (window.scriptMapApp && window.scriptMapApp.connectionMode?.active) {
+                    window.scriptMapApp.endConnectionMode();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
