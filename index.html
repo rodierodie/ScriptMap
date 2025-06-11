@@ -9,7 +9,9 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+        // Конфигурация Tailwind для подавления предупреждений в dev режиме
         tailwind.config = {
+            darkMode: false, // Отключаем dark mode для MVP
             theme: {
                 extend: {
                     colors: {
@@ -46,6 +48,9 @@
                         }
                     }
                 }
+            },
+            corePlugins: {
+                preflight: true,
             }
         }
     </script>
@@ -325,11 +330,11 @@
     <!-- Скрытый input для импорта файлов -->
     <input type="file" id="file-import" accept=".json" style="display: none;">
 
-    <!-- Подключение скриптов -->
+    <!-- Подключение скриптов в правильном порядке -->
+    <script src="src/js/app.js"></script>
     <script src="src/js/utils.js"></script>
     <script src="src/js/canvas.js"></script>
     <script src="src/js/cards.js"></script>
-    <script src="src/js/app.js"></script>
     
     <script>
         // Инициализация приложения
