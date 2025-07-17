@@ -225,7 +225,8 @@ class NotesApp {
                     
                     this.modules.notes?.updateNote(welcomeNote.id, {
                         title: 'Добро пожаловать в Notes App! 📝',
-                        content: welcomeText
+                        content: welcomeText,
+                        tags: ['приветствие', 'инструкция', 'начало']
                     });
                 }
             }, 100);
@@ -420,13 +421,15 @@ window.saveNoteModal = function(noteId) {
     if (!modal || !window.app || !window.app.modules.notes) return;
     
     const titleInput = modal.querySelector('.modal-title-input');
+    const tagsInput = modal.querySelector('#tagsInput');
     const contentTextarea = modal.querySelector('.modal-content-textarea');
     
-    if (titleInput && contentTextarea) {
+    if (titleInput && contentTextarea && tagsInput) {
         window.app.modules.notes.saveNoteFromModal(
             noteId, 
             titleInput.value, 
-            contentTextarea.value
+            contentTextarea.value,
+            tagsInput.value
         );
         window.app.modules.notes.closeNoteModal();
     }
