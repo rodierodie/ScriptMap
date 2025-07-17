@@ -1,0 +1,510 @@
+/* === BASE STYLES === */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5f5f5;
+    overflow: hidden;
+    height: 100vh;
+}
+
+/* === CANVAS STYLES === */
+.canvas-container {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    cursor: default;
+    background: 
+        radial-gradient(circle, #ddd 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: 0 0;
+}
+
+.canvas-container.panning {
+    cursor: grabbing;
+}
+
+.canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 5000px;
+    height: 5000px;
+    transform-origin: 0 0;
+}
+
+/* === NOTE STYLES === */
+.note {
+    position: absolute;
+    min-width: 200px;
+    max-width: 400px;
+    min-height: 120px;
+    background: #fff;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    padding: 16px;
+}
+
+.note:hover {
+    border-color: #4285f4;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.note.editing {
+    border-color: #4285f4;
+}
+
+.note.dragging {
+    transform: rotate(2deg);
+    z-index: 1000;
+    opacity: 0.9;
+}
+
+.note-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.note-preview {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.4;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    margin-bottom: 12px;
+}
+
+.note-preview.empty {
+    color: #999;
+    font-style: italic;
+}
+
+.note-open-btn {
+    background: #f8f9fa;
+    border: 1px solid #e1e5e9;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: #5f6368;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.note-open-btn:hover {
+    background: #e8f0fe;
+    border-color: #4285f4;
+    color: #1a73e8;
+}
+
+/* === NOTE ACTIONS === */
+.note-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.note:hover .note-actions {
+    opacity: 1;
+}
+
+.note-action-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #5f6368;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+}
+
+.note-action-btn:hover {
+    background: #f1f3f4;
+    color: #1a1a1a;
+    transform: scale(1.1);
+}
+
+.note-action-btn.duplicate:hover {
+    background: #e8f5e8;
+    color: #137333;
+}
+
+.note-action-btn.delete:hover {
+    background: #fce8e6;
+    color: #d33b2c;
+}
+
+/* === DRAG HANDLE === */
+.drag-handle {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #5f6368;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+}
+
+.drag-handle:before {
+    content: "⋮⋮";
+    letter-spacing: -2px;
+    line-height: 1;
+}
+
+.drag-handle:hover {
+    background: #f1f3f4;
+    color: #1a1a1a;
+    transform: scale(1.1);
+    cursor: grabbing;
+}
+
+.drag-handle.dragging {
+    cursor: grabbing;
+    opacity: 1;
+}
+
+/* === UI COMPONENTS === */
+.instructions {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    transform-origin: top left;
+}
+
+.instructions.hidden {
+    opacity: 0;
+    transform: scale(0);
+    pointer-events: none;
+}
+
+.info-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    width: 40px;
+    height: 40px;
+    background: rgba(0,0,0,0.8);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 1001;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.info-btn:hover {
+    background: rgba(0,0,0,0.9);
+    transform: scale(1.1);
+}
+
+.add-note-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    background: #4285f4;
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+    z-index: 1000;
+}
+
+.add-note-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+}
+
+.add-note-btn:active {
+    transform: scale(0.95);
+}
+
+/* === MODAL STYLES === */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    animation: slideUp 0.2s ease-out;
+}
+
+.modal-header {
+    padding: 20px 24px 0;
+    border-bottom: none;
+}
+
+.modal-title-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 24px;
+    font-weight: 600;
+    color: #1a1a1a;
+    background: transparent;
+    padding: 8px 0;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.modal-title-input:focus {
+    border-bottom-color: #4285f4;
+}
+
+.modal-title-input::placeholder {
+    color: #9aa0a6;
+}
+
+.modal-body {
+    padding: 20px 24px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.modal-content-textarea {
+    width: 100%;
+    min-height: 300px;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #1a1a1a;
+    background: transparent;
+    resize: none;
+    font-family: inherit;
+}
+
+.modal-content-textarea::placeholder {
+    color: #9aa0a6;
+}
+
+.modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e8eaed;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.modal-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.modal-btn-primary {
+    background: #4285f4;
+    color: white;
+}
+
+.modal-btn-primary:hover {
+    background: #3367d6;
+}
+
+.modal-btn-secondary {
+    background: transparent;
+    color: #5f6368;
+    border: 1px solid #dadce0;
+}
+
+.modal-btn-secondary:hover {
+    background: #f8f9fa;
+}
+
+/* === ANIMATIONS === */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* === NOTIFICATIONS === */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    font-size: 14px;
+    max-width: 300px;
+    animation: slideIn 0.3s ease-out;
+}
+
+.notification-info {
+    background: #4285f4;
+    color: white;
+}
+
+.notification-success {
+    background: #34a853;
+    color: white;
+}
+
+.notification-warning {
+    background: #fbbc04;
+    color: white;
+}
+
+.notification-error {
+    background: #ea4335;
+    color: white;
+}
+
+/* === DARK THEME === */
+[data-theme="dark"] {
+    background: #1a1a1a;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .canvas-container {
+    background: #1a1a1a;
+    background-image: radial-gradient(circle, #333 1px, transparent 1px);
+}
+
+[data-theme="dark"] .note {
+    background: #2d2d2d;
+    border-color: transparent;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .note:hover {
+    border-color: #4285f4;
+}
+
+[data-theme="dark"] .note-content {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .drag-handle {
+    background: #555;
+    color: #ccc;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    .note {
+        min-width: 150px;
+        min-height: 80px;
+    }
+    
+    .note-content {
+        font-size: 13px;
+        padding: 10px;
+    }
+    
+    .instructions {
+        font-size: 12px;
+        padding: 10px 12px;
+    }
+    
+    .add-note-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+        bottom: 20px;
+        right: 20px;
+    }
+    
+    .info-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 14px;
+    }
+}

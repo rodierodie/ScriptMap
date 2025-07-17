@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Модульный текстовый редактор</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Info button -->
+    <button class="info-btn" title="Показать/скрыть инструкции">ℹ</button>
+    
+    <!-- Instructions panel -->
+    <div class="instructions hidden">
+        Пробел + мышь = перемещение холста • Двойной клик = новая заметка • Кликните по заметке для редактирования • Кнопки действий при наведении
+    </div>
+
+    <!-- Canvas container -->
+    <div class="canvas-container">
+        <div class="canvas"></div>
+    </div>
+
+    <!-- Add note button -->
+    <button class="add-note-btn" title="Добавить заметку">+</button>
+
+    <!-- JavaScript modules -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
