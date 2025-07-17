@@ -60,7 +60,12 @@ export class UIModule {
             this.createNoteAtCenter();
         });
 
-        // Клик вне инструкций для их скрытия
+        // Клик по самой легенде для её скрытия
+        this.elements.instructions.addEventListener('click', () => {
+            this.hideInstructions();
+        });
+
+        // Клик вне инструкций для их скрытия (но не по кнопке info)
         document.addEventListener('click', (e) => {
             if (this.state.get('ui.instructionsVisible') && 
                 !this.elements.instructions.contains(e.target) &&
@@ -154,10 +159,14 @@ export class UIModule {
      */
     updateInstructionsVisibility(visible) {
         if (visible) {
+            // Показать инструкции и скрыть кнопку info
             this.elements.instructions.classList.remove('hidden');
+            this.elements.infoBtn.classList.add('hidden');
             this.elements.infoBtn.setAttribute('aria-expanded', 'true');
         } else {
+            // Скрыть инструкции и показать кнопку info
             this.elements.instructions.classList.add('hidden');
+            this.elements.infoBtn.classList.remove('hidden');
             this.elements.infoBtn.setAttribute('aria-expanded', 'false');
         }
     }

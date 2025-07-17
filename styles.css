@@ -226,12 +226,17 @@ body {
     z-index: 1000;
     transition: all 0.3s ease;
     transform-origin: top left;
+    cursor: pointer;
 }
 
 .instructions.hidden {
     opacity: 0;
     transform: scale(0);
     pointer-events: none;
+}
+
+.instructions:hover {
+    background: rgba(0,0,0,0.9);
 }
 
 .info-btn {
@@ -251,6 +256,12 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.info-btn.hidden {
+    opacity: 0;
+    transform: scale(0);
+    pointer-events: none;
 }
 
 .info-btn:hover {
