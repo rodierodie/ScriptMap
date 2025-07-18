@@ -95,6 +95,11 @@ export class UIModule {
      */
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
+            // Не обрабатывать горячие клавиши если открыто модальное окно
+            if (document.getElementById('noteModal')) {
+                return;
+            }
+
             // Игнорировать если фокус в textarea
             if (e.target.tagName === 'TEXTAREA') return;
 

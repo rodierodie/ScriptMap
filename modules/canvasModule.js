@@ -82,6 +82,11 @@ export class CanvasModule {
      * @param {KeyboardEvent} e - Событие клавиатуры
      */
     handleKeyDown(e) {
+        // Не обрабатывать пробел если открыто модальное окно
+        if (document.getElementById('noteModal')) {
+            return;
+        }
+
         if (e.code === 'Space' && !this.state.get('interaction.isSpacePressed')) {
             e.preventDefault();
             this.state.set('interaction.isSpacePressed', true);
@@ -96,6 +101,11 @@ export class CanvasModule {
      * @param {KeyboardEvent} e - Событие клавиатуры
      */
     handleKeyUp(e) {
+        // Не обрабатывать пробел если открыто модальное окно
+        if (document.getElementById('noteModal')) {
+            return;
+        }
+
         if (e.code === 'Space') {
             this.state.set('interaction.isSpacePressed', false);
             this.state.set('canvas.isPanning', false);
@@ -178,6 +188,11 @@ export class CanvasModule {
      * @param {KeyboardEvent} e - Событие клавиатуры
      */
     preventSpaceScroll(e) {
+        // Не блокировать пробел если открыто модальное окно
+        if (document.getElementById('noteModal')) {
+            return;
+        }
+
         if (e.code === 'Space' && e.target.tagName !== 'TEXTAREA') {
             e.preventDefault();
         }
