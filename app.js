@@ -1,7 +1,5 @@
 /**
- * Notes App - Главный класс приложения
- * 
- * Объединяет все модули в единое приложение с чистым API для расширения
+ * Notes App - Главный класс приложения с поддержкой связей
  */
 
 // Импорт модулей
@@ -10,6 +8,7 @@ import { StateManager } from './modules/stateManager.js';
 import { CanvasModule } from './modules/canvasModule.js';
 import { NotesModule } from './modules/notesModule.js';
 import { UIModule } from './modules/uiModule.js';
+import { ConnectionsModule } from './modules/connectionsModule.js';
 
 /**
  * Главный класс приложения
@@ -32,7 +31,7 @@ class NotesApp {
      */
     async init() {
         try {
-            console.log('🚀 Initializing Notes App...');
+            console.log('🚀 Initializing Notes App with Connections...');
             
             // Загрузка модулей
             await this.loadModules();
@@ -49,8 +48,9 @@ class NotesApp {
             // Экспорт в глобальную область для отладки
             this.exposeToGlobal();
             
-            console.log('✅ Notes App initialized successfully');
+            console.log('✅ Notes App with Connections initialized successfully');
             console.log('📦 Available modules:', Object.keys(this.modules));
+            console.log('🔗 Try: Ctrl+C to create connections between notes');
             
         } catch (error) {
             console.error('❌ Failed to initialize app:', error);
@@ -65,7 +65,8 @@ class NotesApp {
         const moduleDefinitions = [
             { name: 'canvas', Class: CanvasModule },
             { name: 'notes', Class: NotesModule },
-            { name: 'ui', Class: UIModule }
+            { name: 'ui', Class: UIModule },
+            { name: 'connections', Class: ConnectionsModule }
         ];
 
         for (const { name, Class } of moduleDefinitions) {
@@ -109,6 +110,55 @@ class NotesApp {
 
         // Уведомления о статистике
         this.setupStatsUpdater();
+
+        // Связь UI модуля с уведомлениями модуля связей
+        this.setupConnectionsUI();
+    }
+
+    /**
+     * Настройка UI для модуля связей
+     */
+    setupConnectionsUI() {
+        // Перенаправляем уведомления от модуля связей в UI модуль
+        this.events.on('ui:show-notification', (data) => {
+            if (this.modules.ui) {
+                this.modules.ui.showNotification(data.message, data.type, data.duration);
+            }
+        });
+
+        // Добавляем горячие клавиши для связей
+        document.addEventListener('keydown', (e) => {
+            // Не обрабатывать если открыто модальное окно
+            if (document.getElementById('noteModal')) return;
+            
+            // Показать статистику связей по Ctrl+Shift+S
+            if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+                e.preventDefault();
+                this.showConnectionsStats();
+            }
+        });
+    }
+
+    /**
+     * Показать статистику связей
+     */
+    showConnectionsStats() {
+        if (this.modules.connections) {
+            const stats = this.modules.connections.getStats();
+            const message = [
+                `🔗 Статистика связей:`,
+                ``,
+                `📊 Всего связей: ${stats.totalConnections}`,
+                `📝 Связанных заметок: ${stats.connectedNotes}`,
+                `📄 Изолированных заметок: ${stats.isolatedNotes}`,
+                `🏆 Максимум связей у одной заметки: ${stats.mostConnected}`,
+                `📈 Среднее количество связей: ${stats.averageConnections}`,
+                ``,
+                `💡 Ctrl+C = создать связь между заметками`
+            ].join('\n');
+            
+            alert(message);
+        }
     }
 
     /**
@@ -118,12 +168,12 @@ class NotesApp {
         let saveTimeout;
         
         this.events.on('state:change', (data) => {
-            // Сохранять только изменения заметок
-            if (data.path.startsWith('notes')) {
+            // Сохранять изменения заметок и связей
+            if (data.path.startsWith('notes') || data.path.startsWith('connections')) {
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(() => {
                     this.saveState();
-                }, 1000); // Сохранение через 1 секунду после последнего изменения
+                }, 1000);
             }
         });
 
@@ -154,10 +204,16 @@ class NotesApp {
             if (savedState) {
                 const state = JSON.parse(savedState);
                 
-                // Восстановить только заметки, остальное по умолчанию
+                // Восстановить заметки
                 if (state.notes && Array.isArray(state.notes)) {
                     this.state.set('notes', state.notes);
                     console.log(`📥 Restored ${state.notes.length} notes from storage`);
+                }
+                
+                // Восстановить связи
+                if (state.connections && Array.isArray(state.connections)) {
+                    this.state.set('connections', state.connections);
+                    console.log(`🔗 Restored ${state.connections.length} connections from storage`);
                 }
                 
                 // Восстановить настройки UI
@@ -181,6 +237,7 @@ class NotesApp {
         try {
             const stateToSave = {
                 notes: this.state.get('notes'),
+                connections: this.state.get('connections'),
                 ui: {
                     theme: this.state.get('ui.theme')
                 },
@@ -188,7 +245,7 @@ class NotesApp {
             };
             
             localStorage.setItem('notes-app-state', JSON.stringify(stateToSave));
-            console.log('💾 State saved to localStorage');
+            console.log('💾 State with connections saved to localStorage');
             
         } catch (error) {
             console.error('❌ Failed to save state:', error);
@@ -209,25 +266,66 @@ class NotesApp {
                 y: 200 
             });
             
-            // Установить содержимое приветственной заметки
+            // Создать вторую заметку для демонстрации связей
+            this.events.emit('note:create', { 
+                x: 500, 
+                y: 300 
+            });
+            
+            // Установить содержимое заметок
             setTimeout(() => {
-                const welcomeNote = this.state.get('notes')[0];
-                if (welcomeNote) {
-                    const welcomeText = `Это модульное приложение для заметок с простым интерфейсом.
+                const createdNotes = this.state.get('notes');
+                
+                if (createdNotes.length >= 1) {
+                    const welcomeNote = createdNotes[0];
+                    const welcomeText = `Это модульное приложение для заметок с поддержкой связей!
 
-Основные возможности:
+🔗 Новые возможности:
+• Ctrl+C = режим создания связей
+• Кликайте по заметкам для соединения
+• Наводите на линию и нажимайте × для удаления
+• Ctrl+Shift+S = статистика связей
+
+Основные функции:
 • Пробел + мышь = навигация по холсту
 • Двойной клик = новая заметка
-• Кликните по заметке или "Открыть" для редактирования
-• Используйте кнопки действий при наведении
+• "Открыть" для редактирования
+• Кнопки действий при наведении
 
 Приятной работы! ✨`;
                     
                     this.modules.notes?.updateNote(welcomeNote.id, {
                         title: 'Добро пожаловать в Notes App! 📝',
                         content: welcomeText,
-                        tags: ['приветствие', 'инструкция', 'начало']
+                        tags: ['приветствие', 'инструкция', 'связи']
                     });
+                }
+                
+                if (createdNotes.length >= 2) {
+                    const secondNote = createdNotes[1];
+                    this.modules.notes?.updateNote(secondNote.id, {
+                        title: 'Пример связанной заметки 🔗',
+                        content: `Эта заметка показывает, как работают связи между заметками.
+
+Попробуйте:
+1. Нажмите Ctrl+C
+2. Кликните на эту заметку
+3. Кликните на соседнюю заметку
+4. Увидите связь!
+
+Связи помогают организовать мысли и показать отношения между идеями.`,
+                        tags: ['пример', 'связи', 'демо']
+                    });
+                    
+                    // Создать связь между заметками для демонстрации
+                    setTimeout(() => {
+                        if (this.modules.connections) {
+                            this.modules.connections.createConnection(
+                                createdNotes[0].id, 
+                                createdNotes[1].id
+                            );
+                        }
+                    }, 500);
                 }
             }, 100);
         }
@@ -246,16 +344,38 @@ class NotesApp {
                 events: () => this.events.getStats(),
                 modules: () => Object.keys(this.modules),
                 notes: () => this.modules.notes?.getAllNotes(),
-                stats: () => this.modules.notes?.getStats(),
+                connections: () => this.state.get('connections'),
+                stats: () => ({
+                    notes: this.modules.notes?.getStats(),
+                    connections: this.modules.connections?.getStats()
+                }),
                 clear: () => this.clearAllData(),
+                clearConnections: () => this.modules.connections?.clearAllConnections(),
                 export: () => this.exportData(),
+                import: (data) => this.importData(data),
                 enableDebug: () => {
                     this.events.setDebug(true);
                     this.state.setDebug(true);
+                    console.log('🐛 Debug mode enabled');
+                },
+                help: () => {
+                    console.log(`
+🔧 Debug Commands:
+• appDebug.state() - показать состояние
+• appDebug.notes() - показать все заметки
+• appDebug.connections() - показать все связи
+• appDebug.stats() - статистика
+• appDebug.export() - экспорт данных
+• appDebug.import(data) - импорт данных
+• appDebug.clear() - очистить все
+• appDebug.enableDebug() - включить отладку
+                    `);
                 }
             };
             
             console.log('🔧 Debug tools available as window.appDebug');
+            console.log('🔗 Try: appDebug.connections() to see all connections');
+            console.log('💡 Type: appDebug.help() for more commands');
         }
     }
 
@@ -348,9 +468,10 @@ class NotesApp {
      */
     exportData() {
         return {
-            version: '1.0.0',
+            version: '1.1.0',
             timestamp: Date.now(),
             notes: this.state.get('notes'),
+            connections: this.state.get('connections'),
             settings: this.state.get('ui')
         };
     }
@@ -364,6 +485,11 @@ class NotesApp {
             if (data.notes && Array.isArray(data.notes)) {
                 this.state.set('notes', data.notes);
                 console.log(`📥 Imported ${data.notes.length} notes`);
+            }
+            
+            if (data.connections && Array.isArray(data.connections)) {
+                this.state.set('connections', data.connections);
+                console.log(`🔗 Imported ${data.connections.length} connections`);
             }
             
             if (data.settings) {
@@ -382,7 +508,7 @@ class NotesApp {
      * Очистить все данные
      */
     clearAllData() {
-        if (confirm('Удалить все заметки и сбросить настройки?')) {
+        if (confirm('Удалить все заметки, связи и сбросить настройки?')) {
             this.state.reset();
             localStorage.removeItem('notes-app-state');
             this.modules.ui?.showNotification('Все данные очищены', 'info');
@@ -399,6 +525,7 @@ class NotesApp {
             events: this.events.getStats(),
             state: this.state.getStats(),
             notes: this.modules.notes?.getStats(),
+            connections: this.modules.connections?.getStats(),
             uptime: Date.now() - this.startTime
         };
     }

@@ -28,6 +28,10 @@ body {
     cursor: grabbing;
 }
 
+.canvas-container.connection-mode {
+    cursor: crosshair !important;
+}
+
 .canvas {
     position: absolute;
     top: 0;
@@ -35,6 +39,88 @@ body {
     width: 5000px;
     height: 5000px;
     transform-origin: 0 0;
+}
+
+/* === CONNECTION LAYER === */
+.connections-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.connection {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.connections-layer svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.connections-layer line {
+    transition: stroke-width 0.2s, stroke 0.2s;
+}
+
+.connection-delete-btn {
+    transition: all 0.2s ease;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.connection-delete-btn:hover {
+    transform: scale(1.2) !important;
+    background: #d33b2c !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.connection-delete-btn:active {
+    transform: scale(1.1) !important;
+    background: #b71c1c !important;
+}
+
+/* === CONNECTION MESSAGE === */
+.connection-message {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #4285f4;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10001;
+    font-size: 14px;
+    transition: opacity 0.3s;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
 }
 
 /* === NOTE STYLES === */
@@ -47,8 +133,9 @@ body {
     border: 2px solid transparent;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
     padding: 16px;
+    z-index: 10;
 }
 
 .note:hover {
@@ -64,6 +151,10 @@ body {
     transform: rotate(2deg);
     z-index: 1000;
     opacity: 0.9;
+}
+
+.canvas-container.connection-mode .note {
+    cursor: pointer !important;
 }
 
 .note-title {
@@ -218,15 +309,17 @@ body {
     position: fixed;
     top: 20px;
     left: 20px;
-    background: rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.85);
     color: white;
-    padding: 12px 16px;
-    border-radius: 6px;
+    padding: 16px 20px;
+    border-radius: 8px;
     font-size: 13px;
     z-index: 1000;
     transition: all 0.3s ease;
     transform-origin: top left;
     cursor: pointer;
+    max-width: 500px;
+    line-height: 1.4;
 }
 
 .instructions.hidden {
@@ -237,6 +330,10 @@ body {
 
 .instructions:hover {
     background: rgba(0,0,0,0.9);
+}
+
+.instructions strong {
+    color: #64b5f6;
 }
 
 .info-btn {
@@ -397,7 +494,7 @@ body {
 
 .modal-tags-input-section {
     display: none;
-    animation: slideDown 0.2s ease-out;
+    animation: slideTagsDown 0.2s ease-out;
 }
 
 .modal-tags-input-section.visible {
@@ -535,7 +632,7 @@ body {
 }
 
 /* === ANIMATIONS === */
-@keyframes slideDown {
+@keyframes slideTagsDown {
     from {
         opacity: 0;
         max-height: 0;
@@ -548,7 +645,6 @@ body {
     }
 }
 
-/* === ANIMATIONS === */
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -642,8 +738,12 @@ body {
     border-color: #4285f4;
 }
 
-[data-theme="dark"] .note-content {
+[data-theme="dark"] .note-title {
     color: #e0e0e0;
+}
+
+[data-theme="dark"] .note-preview {
+    color: #b0b0b0;
 }
 
 [data-theme="dark"] .drag-handle {
@@ -651,21 +751,49 @@ body {
     color: #ccc;
 }
 
+[data-theme="dark"] .connections-layer line {
+    stroke: #64b5f6;
+}
+
+[data-theme="dark"] .connections-layer line:hover {
+    stroke: #90caf9;
+}
+
+[data-theme="dark"] .modal {
+    background: #2d2d2d;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .modal-title-input {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .modal-content-textarea {
+    color: #e0e0e0;
+}
+
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
     .note {
         min-width: 150px;
         min-height: 80px;
+        padding: 12px;
     }
     
-    .note-content {
+    .note-title {
+        font-size: 14px;
+    }
+    
+    .note-preview {
         font-size: 13px;
-        padding: 10px;
     }
     
     .instructions {
         font-size: 12px;
-        padding: 10px 12px;
+        padding: 12px 16px;
+        max-width: 90%;
+        left: 5%;
+        top: 10px;
     }
     
     .add-note-btn {
@@ -680,5 +808,25 @@ body {
         width: 35px;
         height: 35px;
         font-size: 14px;
+    }
+    
+    .modal {
+        width: 95%;
+        max-height: 90vh;
+    }
+    
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: 16px 20px;
+    }
+    
+    .modal-title-input {
+        font-size: 20px;
+    }
+    
+    .modal-content-textarea {
+        font-size: 14px;
+        min-height: 200px;
     }
 }

@@ -1,10 +1,5 @@
 /**
  * Event System - Централизованная система событий для связи между модулями
- * 
- * Использование:
- * const events = new EventSystem();
- * events.on('note:create', (data) => console.log(data));
- * events.emit('note:create', { x: 100, y: 100 });
  */
 export class EventSystem {
     constructor() {

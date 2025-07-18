@@ -1,10 +1,5 @@
 /**
  * Canvas Module - Управление холстом, навигацией и панорамированием
- * 
- * Функции:
- * - Панорамирование с зажатым пробелом
- * - Создание заметок двойным кликом
- * - Управление трансформацией холста
  */
 export class CanvasModule {
     constructor(state, events) {
@@ -193,7 +188,7 @@ export class CanvasModule {
             return;
         }
 
-        if (e.code === 'Space' && e.target.tagName !== 'TEXTAREA') {
+        if (e.code === 'Space' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT') {
             e.preventDefault();
         }
     }

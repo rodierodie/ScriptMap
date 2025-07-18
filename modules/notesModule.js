@@ -6,6 +6,8 @@
  * - Перетаскивание заметок
  * - Автоматическое изменение размера
  * - Редактирование содержимого
+ * - Модальные окна для редактирования
+ * - Система тегов
  */
 export class NotesModule {
     constructor(state, events) {
@@ -426,28 +428,6 @@ export class NotesModule {
                 this.deleteNote(noteId);
             }
         });
-
-        // Убираем обработчик клика с всей заметки
-        // Теперь открытие происходит только через кнопку "Открыть"
-    }
-
-    /**
-     * Обработка горячих клавиш в заметке
-     * @param {KeyboardEvent} e - Событие клавиатуры
-     * @param {string} noteId - ID заметки
-     */
-    handleNoteKeydown(e, noteId) {
-        // Ctrl/Cmd + D - дублировать заметку
-        if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
-            e.preventDefault();
-            this.duplicateNote(noteId);
-        }
-        
-        // Ctrl/Cmd + Delete - удалить заметку
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Delete') {
-            e.preventDefault();
-            this.deleteNote(noteId);
-        }
     }
 
     /**
@@ -559,22 +539,6 @@ export class NotesModule {
     }
 
     /**
-     * Обновить содержимое заметки (оптимизированная версия)
-     * @param {string} noteId - ID заметки
-     * @param {string} content - Новое содержимое
-     */
-    updateNoteContent(noteId, content) {
-        // Найти заметку в состоянии
-        const notes = this.state.get('notes');
-        const currentNote = notes.find(note => note.id === noteId);
-        
-        // Обновить только если содержимое действительно изменилось
-        if (currentNote && currentNote.content !== content) {
-            this.updateNote(noteId, { content });
-        }
-    }
-
-    /**
      * Обновить позицию заметки (оптимизированная версия)
      * @param {string} noteId - ID заметки
      * @param {Object} position - Новая позиция {x, y}
@@ -628,165 +592,6 @@ export class NotesModule {
             this.state.update('notes', (notes) => [...notes, newNote]);
             this.events.emit('note:duplicated', { original: originalNote, duplicate: newNote });
         }
-    }
-
-    /**
-     * Начать перетаскивание заметки
-     * @param {string} noteId - ID заметки
-     * @param {HTMLElement} noteElement - DOM элемент заметки
-     * @param {MouseEvent} e - Событие мыши
-     */
-    startDragging(noteId, noteElement, e) {
-        this.state.set('canvas.isDragging', true);
-        this.state.set('interaction.dragNote', noteId);
-        noteElement.classList.add('dragging');
-        
-        const dragHandle = noteElement.querySelector('.drag-handle');
-        if (dragHandle) {
-            dragHandle.classList.add('dragging');
-        }
-
-        const rect = noteElement.getBoundingClientRect();
-        this.state.set('interaction.dragOffset', {
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top
-        });
-
-        e.preventDefault();
-        e.stopPropagation();
-        
-        this.events.emit('note:drag-start', { noteId, position: { x: e.clientX, y: e.clientY } });
-    }
-
-    /**
-     * Настройка глобальных событий перетаскивания
-     */
-    setupGlobalDragEvents() {
-        document.addEventListener('mousemove', (e) => {
-            const dragNoteId = this.state.get('interaction.dragNote');
-            if (this.state.get('canvas.isDragging') && dragNoteId) {
-                this.handleDragMove(e, dragNoteId);
-            }
-        });
-
-        document.addEventListener('mouseup', () => {
-            this.handleDragEnd();
-        });
-    }
-
-    /**
-     * Обработка движения при перетаскивании
-     * @param {MouseEvent} e - Событие мыши
-     * @param {string} noteId - ID перетаскиваемой заметки
-     */
-    handleDragMove(e, noteId) {
-        const canvasRect = this.canvas.getBoundingClientRect();
-        const dragOffset = this.state.get('interaction.dragOffset');
-        
-        const x = e.clientX - canvasRect.left - dragOffset.x;
-        const y = e.clientY - canvasRect.top - dragOffset.y;
-        
-        const newPosition = {
-            x: Math.max(0, x),
-            y: Math.max(0, y)
-        };
-        
-        this.updateNotePosition(noteId, newPosition);
-        this.events.emit('note:drag-move', { noteId, position: newPosition });
-    }
-
-    /**
-     * Завершение перетаскивания
-     */
-    handleDragEnd() {
-        const dragNoteId = this.state.get('interaction.dragNote');
-        
-        if (this.state.get('canvas.isDragging') && dragNoteId) {
-            const noteElement = document.querySelector(`[data-note-id="${dragNoteId}"]`);
-            if (noteElement) {
-                noteElement.classList.remove('dragging');
-                const dragHandle = noteElement.querySelector('.drag-handle');
-                if (dragHandle) {
-                    dragHandle.classList.remove('dragging');
-                }
-                
-                // Принудительно сохранить финальную позицию
-                clearTimeout(this.positionUpdateTimeout);
-                const finalPosition = {
-                    x: parseInt(noteElement.style.left),
-                    y: parseInt(noteElement.style.top)
-                };
-                this.updateNote(dragNoteId, { position: finalPosition });
-            }
-            
-            this.state.set('canvas.isDragging', false);
-            this.state.set('interaction.dragNote', null);
-            
-            this.events.emit('note:drag-end', { noteId: dragNoteId });
-        }
-    }
-
-    /**
-     * Обновить позицию заметки (оптимизированная версия)
-     * @param {string} noteId - ID заметки
-     * @param {Object} position - Новая позиция {x, y}
-     */
-    updateNotePosition(noteId, position) {
-        // Найти заметку в состоянии
-        const notes = this.state.get('notes');
-        const currentNote = notes.find(note => note.id === noteId);
-        
-        // Обновить DOM немедленно для плавного перетаскивания
-        const noteElement = document.querySelector(`[data-note-id="${noteId}"]`);
-        if (noteElement) {
-            noteElement.style.left = position.x + 'px';
-            noteElement.style.top = position.y + 'px';
-        }
-        
-        // Обновить состояние только если позиция действительно изменилась
-        if (currentNote && 
-            (currentNote.position.x !== position.x || currentNote.position.y !== position.y)) {
-            
-            // Используем debounce для обновления состояния при перетаскивании
-            clearTimeout(this.positionUpdateTimeout);
-            this.positionUpdateTimeout = setTimeout(() => {
-                this.updateNote(noteId, { position });
-            }, 16); // ~60fps
-        }
-    }
-
-    /**
-     * Генерация уникального ID
-     * @returns {string} - Уникальный ID
-     */
-    generateId() {
-        return Date.now().toString(36) + Math.random().toString(36).substr(2);
-    }
-
-    /**
-     * Получить заметку по ID
-     * @param {string} noteId - ID заметки
-     * @returns {Object|null} - Объект заметки или null
-     */
-    getNote(noteId) {
-        const notes = this.state.get('notes');
-        return notes.find(note => note.id === noteId) || null;
-    }
-
-    /**
-     * Получить все заметки
-     * @returns {Array} - Массив всех заметок
-     */
-    getAllNotes() {
-        return this.state.get('notes');
-    }
-
-    /**
-     * Очистить все заметки
-     */
-    clearAllNotes() {
-        this.state.set('notes', []);
-        this.events.emit('notes:cleared');
     }
 
     /**
@@ -1092,18 +897,6 @@ export class NotesModule {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
-    }
-
-    /**
-     * Автоматическое изменение размера textarea
-     * @param {HTMLTextAreaElement} textarea - Элемент textarea
-     */
-    autoResize(textarea) {
-        textarea.style.height = 'auto';
-        textarea.style.height = Math.max(100, textarea.scrollHeight) + 'px';
-        
-        const note = textarea.parentElement;
-        note.style.height = textarea.style.height;
     }
 
     /**

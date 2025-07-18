@@ -1,11 +1,5 @@
 /**
  * State Manager - Централизованное управление состоянием приложения
- * 
- * Использование:
- * const state = new StateManager(events);
- * state.set('notes', []);
- * const notes = state.get('notes');
- * state.update('notes', (notes) => [...notes, newNote]);
  */
 export class StateManager {
     constructor(events) {
@@ -23,6 +17,7 @@ export class StateManager {
     getInitialState() {
         return {
             notes: [],
+            connections: [],
             canvas: {
                 transform: { x: 0, y: 0 },
                 isDragging: false,

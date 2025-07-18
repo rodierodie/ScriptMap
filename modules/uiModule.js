@@ -1,10 +1,5 @@
 /**
  * UI Module - Управление элементами пользовательского интерфейса
- * 
- * Функции:
- * - Управление кнопками и панелями
- * - Показ/скрытие инструкций
- * - Обработка пользовательских действий
  */
 export class UIModule {
     constructor(state, events) {
@@ -73,6 +68,11 @@ export class UIModule {
                 this.hideInstructions();
             }
         });
+
+        // Обработка уведомлений от других модулей
+        this.events.on('ui:show-notification', (data) => {
+            this.showNotification(data.message, data.type, data.duration);
+        });
     }
 
     /**
@@ -100,8 +100,8 @@ export class UIModule {
                 return;
             }
 
-            // Игнорировать если фокус в textarea
-            if (e.target.tagName === 'TEXTAREA') return;
+            // Игнорировать если фокус в textarea или input
+            if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
 
             switch (e.key) {
                 case '?':
@@ -247,22 +247,6 @@ export class UIModule {
         notification.className = `notification notification-${type}`;
         notification.textContent = message;
         
-        // Стили для уведомления
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: ${this.getNotificationColor(type)};
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 10000;
-            font-size: 14px;
-            max-width: 300px;
-            animation: slideIn 0.3s ease-out;
-        `;
-        
         document.body.appendChild(notification);
         
         // Автоматическое удаление
@@ -276,21 +260,6 @@ export class UIModule {
         }, duration);
         
         this.events.emit('ui:notification-shown', { message, type, duration });
-    }
-
-    /**
-     * Получить цвет для типа уведомления
-     * @param {string} type - Тип уведомления
-     * @returns {string} - CSS цвет
-     */
-    getNotificationColor(type) {
-        const colors = {
-            info: '#4285f4',
-            success: '#34a853',
-            warning: '#fbbc04',
-            error: '#ea4335'
-        };
-        return colors[type] || colors.info;
     }
 
     /**
@@ -317,7 +286,7 @@ export class UIModule {
      */
     updateNotesCount(count) {
         // Обновить title страницы
-        document.title = count > 0 ? `Notes (${count})` : 'Модульный текстовый редактор';
+        document.title = count > 0 ? `Notes (${count})` : 'Notes App с связями';
         
         // Обновить кнопку добавления заметки
         this.elements.addNoteBtn.title = `Добавить заметку (${count} сейчас)`;
@@ -330,6 +299,7 @@ export class UIModule {
      */
     showStats() {
         const notes = this.state.get('notes');
+        const connections = this.state.get('connections');
         const totalCharacters = notes.reduce((sum, note) => sum + note.content.length, 0);
         const totalWords = notes.reduce((sum, note) => {
             return sum + note.content.trim().split(/\s+/).filter(word => word.length > 0).length;
@@ -337,13 +307,19 @@ export class UIModule {
         
         const stats = [
             `📝 Заметок: ${notes.length}`,
+            `🔗 Связей: ${connections.length}`,
             `📊 Символов: ${totalCharacters}`,
             `📈 Слов: ${totalWords}`,
             `⏱️ Средняя длина: ${notes.length > 0 ? Math.round(totalCharacters / notes.length) : 0} символов`
         ].join('\n');
         
         alert(`Статистика:\n\n${stats}`);
-        this.events.emit('ui:stats-shown', { notes: notes.length, characters: totalCharacters, words: totalWords });
+        this.events.emit('ui:stats-shown', { 
+            notes: notes.length, 
+            connections: connections.length,
+            characters: totalCharacters, 
+            words: totalWords 
+        });
     }
 
     /**
@@ -392,7 +368,6 @@ export class UIModule {
      * Уничтожение модуля (очистка обработчиков)
      */
     destroy() {
-        // Здесь можно добавить очистку обработчиков если потребуется
         console.log('🗑️ UI module destroyed');
     }
 }
