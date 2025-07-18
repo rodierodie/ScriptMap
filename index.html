@@ -3,29 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notes App с связями</title>
+    <title>Notes App v2.0 - Система ролей</title>
     <link rel="stylesheet" href="styles.css">
+    <meta name="description" content="Notes App v2.0 - Модульное приложение для заметок с системой ролей и вкладок">
+    <meta name="version" content="2.0">
 </head>
 <body>
+    <!-- Контейнер вкладок (создается динамически через TabsModule) -->
+    <!-- <div class="tabs-container">...</div> -->
+    
     <!-- Info button -->
     <button class="info-btn" title="Показать/скрыть инструкции">ℹ</button>
     
     <!-- Instructions panel -->
     <div class="instructions hidden">
-        <strong>🔗 Связи:</strong> Ctrl+C = создать связь между заметками • Наведите на линию для удаления<br>
-        <strong>📝 Заметки:</strong> Пробел + мышь = перемещение холста • Двойной клик = новая заметка • "Открыть" для редактирования<br>
-        <strong>⌨️ Горячие клавиши:</strong> Ctrl+Shift+S = статистика связей • ESC = отмена • ? = показать/скрыть помощь
+        <strong>🎯 Система ролей v2.0:</strong> Ctrl+1 = Основное дерево • Ctrl+2,3,4 = Роли • Ctrl+T = новая роль<br>
+        <strong>🔗 Связи:</strong> Ctrl+C = создать связь между блоками • Наведите на линию для удаления<br>
+        <strong>📝 Блоки:</strong> Пробел + мышь = перемещение холста • Двойной клик = новый блок • "Открыть" для редактирования<br>
+        <strong>⌨️ Горячие клавиши:</strong> Ctrl+E = экспорт • Ctrl+R = статистика • ? = показать/скрыть помощь
     </div>
 
-    <!-- Canvas container -->
-    <div class="canvas-container">
-        <div class="canvas"></div>
+    <!-- Main content container -->
+    <div class="main-content">
+        <!-- Палитра блоков (создается динамически через BlocksPaletteModule) -->
+        <!-- <div class="blocks-palette">...</div> -->
+        
+        <!-- Canvas area -->
+        <div class="canvas-area">
+            <!-- Индикатор вкладки (создается динамически через TabsModule) -->
+            <!-- <div class="tab-indicator">...</div> -->
+            
+            <!-- Canvas container -->
+            <div class="canvas-container">
+                <div class="canvas"></div>
+            </div>
+        </div>
     </div>
 
-    <!-- Add note button -->
-    <button class="add-note-btn" title="Добавить заметку">+</button>
+    <!-- Add button (динамически обновляется в зависимости от контекста) -->
+    <button class="add-note-btn" id="addBtn" title="Добавить элемент">+</button>
+
+    <!-- Модальные окна создаются динамически модулями -->
+    <!-- Note modal - создается в NotesModule -->
+    <!-- Role modal - создается в TabsModule -->
+
+    <!-- Loading indicator для миграции -->
+    <div class="migration-overlay" id="migrationOverlay" style="display: none;">
+        <div class="migration-modal">
+            <div class="migration-icon">🔄</div>
+            <div class="migration-title">Обновление данных...</div>
+            <div class="migration-subtitle">Выполняется миграция к версии 2.0</div>
+            <div class="migration-progress">
+                <div class="migration-progress-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error fallback (создается динамически при ошибках) -->
+    <div class="error-overlay" id="errorOverlay" style="display: none;">
+        <div class="error-modal">
+            <div class="error-icon">⚠️</div>
+            <div class="error-title">Ошибка загрузки</div>
+            <div class="error-message">Не удалось загрузить приложение</div>
+            <div class="error-actions">
+                <button onclick="window.location.reload()">Обновить</button>
+                <button onclick="localStorage.clear(); window.location.reload()">Сбросить данные</button>
+            </div>
+        </div>
+    </div>
 
     <!-- JavaScript modules -->
     <script type="module" src="app.js"></script>
+    
+    <!-- Service Worker для кэширования (опционально) -->
+    <script>
+        // Регистрация Service Worker для офлайн работы
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => console.log('SW registered'))
+                    .catch(error => console.log('SW registration failed'));
+            });
+        }
+    </script>
 </body>
 </html>

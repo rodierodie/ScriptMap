@@ -1,20 +1,64 @@
 /**
- * UI Module - Управление элементами пользовательского интерфейса
+ * UI Module v2.0 - Управление пользовательским интерфейсом с поддержкой вкладок
  */
 export class UIModule {
     constructor(state, events) {
         this.state = state;
         this.events = events;
+        this.version = '2.0';
         
         // Найти элементы UI
         this.elements = {
-            infoBtn: document.querySelector('.info-btn'),
-            instructions: document.querySelector('.instructions'),
-            addNoteBtn: document.querySelector('.add-note-btn')
+            infoBtn: null,
+            instructions: null,
+            addNoteBtn: null
         };
         
-        this.validateElements();
         this.init();
+    }
+
+    /**
+     * Инициализация модуля
+     */
+    init() {
+        this.createUIElements();
+        this.validateElements();
+        this.setupEventListeners();
+        this.setupStateWatchers();
+        this.setupKeyboardShortcuts();
+        
+        console.log('🎛️ UI module v2.0 initialized');
+    }
+
+    /**
+     * Создать элементы UI
+     */
+    createUIElements() {
+        // Создать кнопку информации
+        this.elements.infoBtn = document.createElement('button');
+        this.elements.infoBtn.className = 'info-btn';
+        this.elements.infoBtn.title = 'Показать/скрыть инструкции';
+        this.elements.infoBtn.innerHTML = 'ℹ';
+        document.body.appendChild(this.elements.infoBtn);
+
+        // Создать панель инструкций
+        this.elements.instructions = document.createElement('div');
+        this.elements.instructions.className = 'instructions hidden';
+        this.elements.instructions.innerHTML = `
+            <strong>🎯 Система ролей v2.0:</strong> Ctrl+1 = Основное дерево • Ctrl+2,3,4 = Роли • Ctrl+T = новая роль<br>
+            <strong>🔗 Связи:</strong> Ctrl+C = создать связь между блоками • Наведите на линию для удаления<br>
+            <strong>📝 Блоки:</strong> Пробел + мышь = перемещение холста • Двойной клик = новый блок • "Открыть" для редактирования<br>
+            <strong>⌨️ Горячие клавиши:</strong> Ctrl+E = экспорт • Ctrl+R = статистика • ? = показать/скрыть помощь
+        `;
+        document.body.appendChild(this.elements.instructions);
+
+        // Создать кнопку добавления
+        this.elements.addNoteBtn = document.createElement('button');
+        this.elements.addNoteBtn.className = 'add-note-btn';
+        this.elements.addNoteBtn.id = 'addBtn';
+        this.elements.addNoteBtn.title = 'Добавить элемент';
+        this.elements.addNoteBtn.innerHTML = '+';
+        document.body.appendChild(this.elements.addNoteBtn);
     }
 
     /**
@@ -26,19 +70,8 @@ export class UIModule {
             .map(([key]) => key);
             
         if (missing.length > 0) {
-            throw new Error(`UI elements not found: ${missing.join(', ')}`);
+            console.warn(`⚠️ UI elements could not be created: ${missing.join(', ')}`);
         }
-    }
-
-    /**
-     * Инициализация модуля
-     */
-    init() {
-        this.setupEventListeners();
-        this.setupStateWatchers();
-        this.setupKeyboardShortcuts();
-        
-        console.log('🎛️ UI module initialized');
     }
 
     /**
@@ -46,33 +79,114 @@ export class UIModule {
      */
     setupEventListeners() {
         // Кнопка информации
-        this.elements.infoBtn.addEventListener('click', () => {
-            this.toggleInstructions();
-        });
+        if (this.elements.infoBtn) {
+            this.elements.infoBtn.addEventListener('click', () => {
+                this.toggleInstructions();
+            });
+        }
 
-        // Кнопка добавления заметки
-        this.elements.addNoteBtn.addEventListener('click', () => {
-            this.createNoteAtCenter();
-        });
+        // Кнопка добавления с контекстным поведением
+        if (this.elements.addNoteBtn) {
+            this.elements.addNoteBtn.addEventListener('click', () => {
+                this.handleAddRequest();
+            });
+        }
 
-        // Клик по самой легенде для её скрытия
-        this.elements.instructions.addEventListener('click', () => {
-            this.hideInstructions();
-        });
+        // Клик по инструкциям для их скрытия
+        if (this.elements.instructions) {
+            this.elements.instructions.addEventListener('click', () => {
+                this.hideInstructions();
+            });
+        }
 
-        // Клик вне инструкций для их скрытия (но не по кнопке info)
+        // Клик вне инструкций для их скрытия
         document.addEventListener('click', (e) => {
             if (this.state.get('ui.instructionsVisible') && 
+                this.elements.instructions &&
+                this.elements.infoBtn &&
                 !this.elements.instructions.contains(e.target) &&
                 !this.elements.infoBtn.contains(e.target)) {
                 this.hideInstructions();
             }
         });
 
-        // Обработка уведомлений от других модулей
+        // События от системы вкладок
+        this.events.on('tab:context-changed', (context) => {
+            this.handleTabContextChange(context);
+        });
+
+        // События уведомлений от других модулей
         this.events.on('ui:show-notification', (data) => {
             this.showNotification(data.message, data.type, data.duration);
         });
+
+        // События запросов на добавление из других модулей
+        this.events.on('ui:add-reference-request', () => {
+            // Запрос на открытие палитры для ролей
+            this.events.emit('palette:open-request');
+        });
+    }
+
+    /**
+     * Обработка смены контекста вкладки
+     * @param {Object} context - Контекст вкладки
+     */
+    handleTabContextChange(context) {
+        this.updateAddButton(context);
+        this.updateInstructions(context);
+    }
+
+    /**
+     * Обновить кнопку добавления в зависимости от контекста
+     * @param {Object} context - Контекст вкладки
+     */
+    updateAddButton(context) {
+        if (!this.elements.addNoteBtn) return;
+
+        if (context.isMainTree) {
+            // В основном дереве - создание блоков
+            this.elements.addNoteBtn.title = 'Создать новый блок (Ctrl+N)';
+            this.elements.addNoteBtn.classList.remove('palette-mode');
+        } else {
+            // В ролях - добавление ссылок через палитру
+            this.elements.addNoteBtn.title = `Добавить блок в роль "${context.role?.name || 'роль'}"`;
+            this.elements.addNoteBtn.classList.add('palette-mode');
+        }
+    }
+
+    /**
+     * Обновить инструкции в зависимости от контекста
+     * @param {Object} context - Контекст вкладки
+     */
+    updateInstructions(context) {
+        if (!this.elements.instructions) return;
+
+        let instructionsHTML;
+        
+        if (context.isMainTree) {
+            instructionsHTML = `
+                <strong>🌳 Основное дерево:</strong> Создание и редактирование всех блоков<br>
+                <strong>🔗 Связи:</strong> Ctrl+C = создать связь между блоками • Наведите на линию для удаления<br>
+                <strong>📝 Блоки:</strong> Пробел + мышь = перемещение • Двойной клик = новый блок • + = создать блок<br>
+                <strong>⌨️ Роли:</strong> Ctrl+2,3,4 = переключение ролей • Ctrl+T = новая роль
+            `;
+        } else {
+            instructionsHTML = `
+                <strong>👤 Роль "${context.role?.name || 'роль'}":</strong> Компоновка блоков для конкретных пользователей<br>
+                <strong>🎨 Палитра:</strong> + = открыть палитру блоков • Выберите блоки из основного дерева<br>
+                <strong>🔗 Ссылки:</strong> Связи между блоками видны во всех ролях<br>
+                <strong>⌨️ Навигация:</strong> Ctrl+1 = основное дерево • Ctrl+T = новая роль
+            `;
+        }
+        
+        this.elements.instructions.innerHTML = instructionsHTML;
+    }
+
+    /**
+     * Обработка запроса на добавление
+     */
+    handleAddRequest() {
+        this.events.emit('ui:add-request');
     }
 
     /**
@@ -88,6 +202,34 @@ export class UIModule {
         this.state.watch('ui.theme', (theme) => {
             this.updateTheme(theme);
         });
+
+        // Отслеживание активной вкладки для обновления UI
+        this.state.watch('ui.activeTab', (newTab) => {
+            this.updateUIForTab(newTab);
+        });
+
+        // Отслеживание изменений блоков для счетчиков
+        this.state.watch('blocks', () => this.updateNotesCount());
+    }
+
+    /**
+     * Обновить UI для активной вкладки
+     * @param {string} tabId - ID активной вкладки
+     */
+    updateUIForTab(tabId) {
+        const isMainTree = tabId === 'main';
+        
+        // Обновить состояние кнопки добавления
+        if (this.elements.addNoteBtn) {
+            if (isMainTree) {
+                this.elements.addNoteBtn.classList.remove('palette-mode');
+                this.elements.addNoteBtn.title = 'Создать новый блок';
+            } else {
+                this.elements.addNoteBtn.classList.add('palette-mode');
+                const role = this.state.get(`roles.${tabId}`);
+                this.elements.addNoteBtn.title = `Добавить в роль "${role?.name || 'роль'}"`;
+            }
+        }
     }
 
     /**
@@ -95,8 +237,8 @@ export class UIModule {
      */
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
-            // Не обрабатывать горячие клавиши если открыто модальное окно
-            if (document.getElementById('noteModal')) {
+            // Не обрабатывать если открыто модальное окно
+            if (document.querySelector('.modal-overlay, .role-modal-overlay.visible')) {
                 return;
             }
 
@@ -112,7 +254,7 @@ export class UIModule {
                 case 'n':
                     if (e.ctrlKey || e.metaKey) {
                         e.preventDefault();
-                        this.createNoteAtCenter();
+                        this.handleAddRequest();
                     }
                     break;
                     
@@ -126,6 +268,13 @@ export class UIModule {
                 case 'Escape':
                     if (this.state.get('ui.instructionsVisible')) {
                         this.hideInstructions();
+                    }
+                    break;
+
+                case 's':
+                    if (e.ctrlKey && e.shiftKey) {
+                        e.preventDefault();
+                        this.showConnectionsStats();
                     }
                     break;
             }
@@ -163,13 +312,13 @@ export class UIModule {
      * @param {boolean} visible - Видимость
      */
     updateInstructionsVisibility(visible) {
+        if (!this.elements.instructions || !this.elements.infoBtn) return;
+
         if (visible) {
-            // Показать инструкции и скрыть кнопку info
             this.elements.instructions.classList.remove('hidden');
             this.elements.infoBtn.classList.add('hidden');
             this.elements.infoBtn.setAttribute('aria-expanded', 'true');
         } else {
-            // Скрыть инструкции и показать кнопку info
             this.elements.instructions.classList.add('hidden');
             this.elements.infoBtn.classList.remove('hidden');
             this.elements.infoBtn.setAttribute('aria-expanded', 'false');
@@ -177,37 +326,42 @@ export class UIModule {
     }
 
     /**
-     * Создать заметку в центре экрана
-     */
-    createNoteAtCenter() {
-        const container = document.querySelector('.canvas-container');
-        const canvas = document.querySelector('.canvas');
-        
-        if (container && canvas) {
-            const containerRect = container.getBoundingClientRect();
-            const canvasRect = canvas.getBoundingClientRect();
-            
-            // Вычислить центр экрана относительно холста
-            const centerX = (containerRect.width / 2) - canvasRect.left;
-            const centerY = (containerRect.height / 2) - canvasRect.top;
-            
-            this.events.emit('note:create', { 
-                x: Math.max(0, centerX), 
-                y: Math.max(0, centerY) 
-            });
-        } else {
-            // Fallback - создать в произвольном месте
-            this.events.emit('note:create');
-        }
-        
-        this.events.emit('ui:note-created-from-button');
-    }
-
-    /**
      * Центрировать холст
      */
     centerCanvas() {
         this.events.emit('canvas:center-request');
+    }
+
+    /**
+     * Показать статистику связей
+     */
+    showConnectionsStats() {
+        // Получить статистику от модуля связей
+        this.events.emit('connections:stats-request');
+        
+        // Если модуль связей не отвечает, показать общую статистику
+        setTimeout(() => {
+            const blocks = this.state.get('blocks');
+            const roles = this.state.get('roles');
+            const connections = this.state.get('connections');
+            
+            const totalReferences = Object.values(roles).reduce(
+                (sum, role) => sum + (role.references?.length || 0), 0
+            );
+            
+            const message = [
+                `📊 Статистика Notes App v2.0:`,
+                ``,
+                `🧱 Блоки: ${blocks.length}`,
+                `👥 Роли: ${Object.keys(roles).length}`,
+                `📎 Ссылки: ${totalReferences}`,
+                `🔗 Связи: ${connections.length}`,
+                ``,
+                `💡 Ctrl+R = полная статистика приложения`
+            ].join('\n');
+            
+            alert(message);
+        }, 100);
     }
 
     /**
@@ -243,20 +397,37 @@ export class UIModule {
      * @param {number} duration - Длительность показа в мс
      */
     showNotification(message, type = 'info', duration = 3000) {
+        // Удалить существующие уведомления того же типа
+        document.querySelectorAll(`.notification-${type}`).forEach(notification => {
+            notification.remove();
+        });
+
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
         notification.textContent = message;
+        
+        // Добавить иконку в зависимости от типа
+        const icons = {
+            info: 'ℹ️',
+            success: '✅',
+            warning: '⚠️',
+            error: '❌'
+        };
+        
+        notification.innerHTML = `${icons[type] || ''} ${message}`;
         
         document.body.appendChild(notification);
         
         // Автоматическое удаление
         setTimeout(() => {
-            notification.style.animation = 'slideOut 0.3s ease-in';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
+            if (notification.parentNode) {
+                notification.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }
         }, duration);
         
         this.events.emit('ui:notification-shown', { message, type, duration });
@@ -281,41 +452,76 @@ export class UIModule {
     }
 
     /**
-     * Обновить счетчик заметок
-     * @param {number} count - Количество заметок
+     * Обновить счетчик заметок/блоков
+     * @param {number} count - Количество блоков (опционально)
      */
-    updateNotesCount(count) {
+    updateNotesCount(count = null) {
+        if (count === null) {
+            count = this.state.get('blocks').length;
+        }
+
         // Обновить title страницы
-        document.title = count > 0 ? `Notes (${count})` : 'Notes App с связями';
+        const activeTab = this.state.get('ui.activeTab');
+        let titleSuffix = '';
         
-        // Обновить кнопку добавления заметки
-        this.elements.addNoteBtn.title = `Добавить заметку (${count} сейчас)`;
+        if (activeTab === 'main') {
+            titleSuffix = count > 0 ? ` (${count} блоков)` : '';
+        } else {
+            const role = this.state.get(`roles.${activeTab}`);
+            const referencesCount = role?.references?.length || 0;
+            titleSuffix = ` - ${role?.name || 'Роль'} (${referencesCount} ссылок)`;
+        }
+        
+        document.title = `Notes App v2.0${titleSuffix}`;
         
         this.events.emit('ui:notes-count-updated', count);
     }
 
     /**
-     * Показать статистику приложения
+     * Показать статистику приложения v2.0
      */
     showStats() {
-        const notes = this.state.get('notes');
+        const blocks = this.state.get('blocks');
+        const roles = this.state.get('roles');
         const connections = this.state.get('connections');
-        const totalCharacters = notes.reduce((sum, note) => sum + note.content.length, 0);
-        const totalWords = notes.reduce((sum, note) => {
-            return sum + note.content.trim().split(/\s+/).filter(word => word.length > 0).length;
+        
+        const totalReferences = Object.values(roles).reduce(
+            (sum, role) => sum + (role.references?.length || 0), 0
+        );
+        
+        const totalCharacters = blocks.reduce((sum, block) => sum + (block.content?.length || 0), 0);
+        const totalWords = blocks.reduce((sum, block) => {
+            return sum + (block.content?.trim().split(/\s+/).filter(word => word.length > 0).length || 0);
         }, 0);
         
+        const customRoles = Object.values(roles).filter(role => !role.isDefault).length;
+        
         const stats = [
-            `📝 Заметок: ${notes.length}`,
-            `🔗 Связей: ${connections.length}`,
-            `📊 Символов: ${totalCharacters}`,
-            `📈 Слов: ${totalWords}`,
-            `⏱️ Средняя длина: ${notes.length > 0 ? Math.round(totalCharacters / notes.length) : 0} символов`
+            `📊 Статистика Notes App v2.0:`,
+            ``,
+            `🧱 Блоки: ${blocks.length}`,
+            `👥 Роли: ${Object.keys(roles).length} (${customRoles} пользовательских)`,
+            `📎 Ссылки: ${totalReferences}`,
+            `🔗 Связи: ${connections.length}`,
+            ``,
+            `📊 Содержимое:`,
+            `• Символов: ${totalCharacters}`,
+            `• Слов: ${totalWords}`,
+            `• Средняя длина блока: ${blocks.length > 0 ? Math.round(totalCharacters / blocks.length) : 0} символов`,
+            ``,
+            `⌨️ Горячие клавиши:`,
+            `• Ctrl+E = экспорт данных`,
+            `• Ctrl+T = новая роль`,
+            `• Ctrl+1,2,3,4 = переключение вкладок`
         ].join('\n');
         
-        alert(`Статистика:\n\n${stats}`);
+        alert(stats);
+        
         this.events.emit('ui:stats-shown', { 
-            notes: notes.length, 
+            blocks: blocks.length, 
+            roles: Object.keys(roles).length,
+            customRoles,
+            references: totalReferences,
             connections: connections.length,
             characters: totalCharacters, 
             words: totalWords 
@@ -341,12 +547,10 @@ export class UIModule {
      */
     handleResize() {
         // Если инструкции видны, проверить помещаются ли они
-        if (this.state.get('ui.instructionsVisible')) {
-            const instructions = this.elements.instructions;
-            const rect = instructions.getBoundingClientRect();
+        if (this.state.get('ui.instructionsVisible') && this.elements.instructions) {
+            const rect = this.elements.instructions.getBoundingClientRect();
             
             if (rect.right > window.innerWidth || rect.bottom > window.innerHeight) {
-                // Скрыть инструкции если они не помещаются
                 this.hideInstructions();
                 this.showNotification('Инструкции скрыты из-за изменения размера окна', 'info', 2000);
             }
@@ -354,20 +558,81 @@ export class UIModule {
     }
 
     /**
-     * Получить состояние UI
+     * Создать индикатор загрузки для миграции
+     * @param {string} message - Сообщение о процессе
+     */
+    showMigrationIndicator(message = 'Обновление данных...') {
+        let overlay = document.getElementById('migrationOverlay');
+        
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.className = 'migration-overlay';
+            overlay.id = 'migrationOverlay';
+            overlay.innerHTML = `
+                <div class="migration-modal">
+                    <div class="migration-icon">🔄</div>
+                    <div class="migration-title">${message}</div>
+                    <div class="migration-subtitle">Выполняется миграция к версии 2.0</div>
+                    <div class="migration-progress">
+                        <div class="migration-progress-bar"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        
+        overlay.style.display = 'flex';
+    }
+
+    /**
+     * Скрыть индикатор загрузки миграции
+     */
+    hideMigrationIndicator() {
+        const overlay = document.getElementById('migrationOverlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+    }
+
+    /**
+     * Получить состояние UI v2.0
      * @returns {Object} - Объект с состоянием UI
      */
     getUIState() {
         return {
+            version: this.version,
             instructionsVisible: this.state.get('ui.instructionsVisible'),
-            theme: this.state.get('ui.theme')
+            theme: this.state.get('ui.theme'),
+            activeTab: this.state.get('ui.activeTab'),
+            paletteOpen: this.state.get('ui.paletteOpen')
         };
     }
 
     /**
-     * Уничтожение модуля (очистка обработчиков)
+     * Получить статистику модуля
+     * @returns {Object} - Статистика UI модуля
+     */
+    getStats() {
+        return {
+            version: this.version,
+            elementsCreated: Object.keys(this.elements).length,
+            notificationsShown: 0, // Можно добавить счетчик
+            themeChanges: 0, // Можно добавить счетчик
+            instructionsToggled: 0 // Можно добавить счетчик
+        };
+    }
+
+    /**
+     * Уничтожение модуля
      */
     destroy() {
-        console.log('🗑️ UI module destroyed');
+        // Удалить созданные элементы
+        Object.values(this.elements).forEach(element => {
+            if (element && element.parentNode) {
+                element.parentNode.removeChild(element);
+            }
+        });
+        
+        console.log('🗑️ UI module v2.0 destroyed');
     }
 }
