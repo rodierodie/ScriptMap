@@ -34,14 +34,14 @@ export class UIModule {
      * Создать элементы UI
      */
     createUIElements() {
-        // Создать кнопку информации
+        // Создать кнопку информации (теперь в левом нижнем углу)
         this.elements.infoBtn = document.createElement('button');
         this.elements.infoBtn.className = 'info-btn';
         this.elements.infoBtn.title = 'Показать/скрыть инструкции';
         this.elements.infoBtn.innerHTML = 'ℹ';
         document.body.appendChild(this.elements.infoBtn);
 
-        // Создать панель инструкций
+        // Создать панель инструкций (теперь внизу слева)
         this.elements.instructions = document.createElement('div');
         this.elements.instructions.className = 'instructions hidden';
         this.elements.instructions.innerHTML = `
@@ -543,14 +543,15 @@ export class UIModule {
     }
 
     /**
-     * Обработка изменения размера окна
+     * Обработка изменения размера окна (обновлена для нижнего позиционирования)
      */
     handleResize() {
-        // Если инструкции видны, проверить помещаются ли они
+        // Если инструкции видны, проверить помещаются ли они в новое окно
         if (this.state.get('ui.instructionsVisible') && this.elements.instructions) {
             const rect = this.elements.instructions.getBoundingClientRect();
             
-            if (rect.right > window.innerWidth || rect.bottom > window.innerHeight) {
+            // Изменена логика: теперь проверяем не выходят ли инструкции за верхний край (т.к. они внизу)
+            if (rect.left < 0 || rect.top < 0 || rect.right > window.innerWidth) {
                 this.hideInstructions();
                 this.showNotification('Инструкции скрыты из-за изменения размера окна', 'info', 2000);
             }
