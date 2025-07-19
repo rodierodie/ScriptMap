@@ -59,21 +59,29 @@ export class ConnectionsModule {
      * Настройка слушателей событий
      */
     setupEventListeners() {
-        // События создания/удаления блоков и ссылок
-        this.events.on('note:created', () => this.renderConnections());
-        this.events.on('note:deleted', (item) => {
-            if (item.blockId) {
-                // Удалена ссылка - не удаляем связи
-                this.renderConnections();
-            } else {
-                // Удален блок - удаляем связи
-                this.handleBlockDeleted(item.id || item.blockId);
-            }
+        // ИСПРАВЛЕНО: Правильные события от StateManager
+        
+        // События создания блоков и ссылок - перерисовываем связи
+        this.events.on('block:created', () => this.renderConnections());
+        this.events.on('reference:created', () => this.renderConnections());
+        
+        // События удаления блоков - удаляем связи и перерисовываем
+        this.events.on('block:deleted', (data) => {
+            this.handleBlockDeleted(data.blockId);
+        });
+        
+        // ИСПРАВЛЕНО: События удаления ссылок - только перерисовываем связи
+        this.events.on('reference:deleted', () => {
+            this.renderConnections();
         });
 
-        this.events.on('block:deleted', (data) => this.handleBlockDeleted(data.blockId));
+        // События обновления блоков и ссылок - перерисовываем связи  
+        this.events.on('block:updated', () => this.renderConnections());
+        this.events.on('reference:updated', () => this.renderConnections());
+
+        // ИСПРАВЛЕНО: Убираем неиспользуемые события
+        // События перетаскивания - перерисовываем связи
         this.events.on('note:drag-move', () => this.renderConnections());
-        this.events.on('note:updated', () => this.renderConnections());
 
         // События от системы вкладок
         this.events.on('tab:context-changed', (context) => {
@@ -154,8 +162,10 @@ export class ConnectionsModule {
             this.cancelConnectionMode();
         }
         
-        // Перерисовать связи для нового контекста
-        this.renderConnections();
+        // ИСПРАВЛЕНО: Перерисовать связи для нового контекста
+        setTimeout(() => {
+            this.renderConnections();
+        }, 100); // Небольшая задержка для завершения рендеринга элементов
     }
 
     /**
@@ -173,7 +183,10 @@ export class ConnectionsModule {
 
         // Перерисовываем при смене вкладки
         this.state.watch('ui.activeTab', () => {
-            this.renderConnections();
+            // Задержка для завершения смены контекста
+            setTimeout(() => {
+                this.renderConnections();
+            }, 50);
         });
     }
 
@@ -333,6 +346,9 @@ export class ConnectionsModule {
             
             this.showMessage(`Удалено связей: ${toDelete.length}`, 'info', 2000);
         }
+        
+        // ИСПРАВЛЕНО: После удаления связей перерисовать оставшиеся
+        this.renderConnections();
     }
 
     /**
@@ -346,6 +362,15 @@ export class ConnectionsModule {
         
         const connections = this.state.get('connections');
         const visibleElements = this.getVisibleElements();
+        
+        // ИСПРАВЛЕНО: Добавляем отладочную информацию
+        if (this.state.get('settings.debugMode')) {
+            console.log(`🔗 Rendering connections:`, {
+                totalConnections: connections.length,
+                visibleElements: visibleElements.size,
+                activeTab: this.state.get('ui.activeTab')
+            });
+        }
         
         connections.forEach(connection => {
             const fromElement = visibleElements.get(connection.from);
@@ -365,7 +390,10 @@ export class ConnectionsModule {
     getVisibleElements() {
         const visibleElements = new Map();
         
-        document.querySelectorAll('.note').forEach(element => {
+        // ИСПРАВЛЕНО: Убеждаемся что ищем элементы в правильном контейнере
+        const notes = this.canvas.querySelectorAll('.note');
+        
+        notes.forEach(element => {
             const blockId = this.getBlockIdFromElement(element);
             if (blockId) {
                 visibleElements.set(blockId, element);
