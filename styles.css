@@ -12,6 +12,7 @@ body {
     height: 100vh;
     display: flex;
     flex-direction: column;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* === TABS SYSTEM === */
@@ -21,6 +22,7 @@ body {
     z-index: 1000;
     position: relative;
     flex-shrink: 0;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .tabs-header {
@@ -160,7 +162,7 @@ body {
     display: flex;
     flex-direction: column;
     transform: translateX(-100%);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
     position: relative;
     z-index: 100;
     flex-shrink: 0;
@@ -175,6 +177,7 @@ body {
     border-bottom: 1px solid #e8eaed;
     background: #f8f9fa;
     flex-shrink: 0;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .palette-title {
@@ -182,18 +185,21 @@ body {
     font-weight: 600;
     color: #1a1a1a;
     margin-bottom: 4px;
+    transition: color 0.3s ease;
 }
 
 .palette-subtitle {
     font-size: 13px;
     color: #5f6368;
     line-height: 1.3;
+    transition: color 0.3s ease;
 }
 
 .palette-search {
     padding: 12px 20px;
     border-bottom: 1px solid #e8eaed;
     flex-shrink: 0;
+    transition: border-color 0.3s ease;
 }
 
 .search-input {
@@ -203,7 +209,7 @@ body {
     border-radius: 6px;
     font-size: 14px;
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background-color 0.3s ease, color 0.3s ease;
 }
 
 .search-input:focus {
@@ -214,6 +220,7 @@ body {
     padding: 12px 20px;
     border-bottom: 1px solid #e8eaed;
     flex-shrink: 0;
+    transition: border-color 0.3s ease;
 }
 
 .filters-header {
@@ -221,6 +228,7 @@ body {
     font-weight: 600;
     color: #5f6368;
     margin-bottom: 8px;
+    transition: color 0.3s ease;
 }
 
 .filters-tags {
@@ -289,6 +297,7 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+    transition: color 0.3s ease;
 }
 
 .group-count {
@@ -297,6 +306,7 @@ body {
     padding: 2px 6px;
     border-radius: 8px;
     font-size: 10px;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .block-item {
@@ -317,6 +327,7 @@ body {
     color: #1a1a1a;
     margin-bottom: 4px;
     line-height: 1.3;
+    transition: color 0.3s ease;
 }
 
 .block-preview {
@@ -328,6 +339,7 @@ body {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     margin-bottom: 6px;
+    transition: color 0.3s ease;
 }
 
 .block-tags {
@@ -348,6 +360,7 @@ body {
     padding: 40px 20px;
     text-align: center;
     color: #5f6368;
+    transition: color 0.3s ease;
 }
 
 .empty-icon {
@@ -408,6 +421,7 @@ body {
         radial-gradient(circle, #ddd 1px, transparent 1px);
     background-size: 20px 20px;
     background-position: 0 0;
+    transition: background-color 0.3s ease;
 }
 
 .canvas-container.panning {
@@ -440,6 +454,7 @@ body {
     font-weight: 500;
     z-index: 1002;
     pointer-events: none;
+    transition: background-color 0.3s ease;
 }
 
 /* === NOTES/BLOCKS STYLES === */
@@ -452,7 +467,7 @@ body {
     border: 2px solid transparent;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s, background-color 0.3s ease;
     padding: 16px;
     z-index: 10;
 }
@@ -497,6 +512,7 @@ body {
     margin-bottom: 8px;
     line-height: 1.3;
     word-break: break-word;
+    transition: color 0.3s ease;
 }
 
 .note-preview {
@@ -508,6 +524,7 @@ body {
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     margin-bottom: 8px;
+    transition: color 0.3s ease;
 }
 
 .note-preview.empty {
@@ -698,7 +715,7 @@ body {
 /* === UI COMPONENTS (ОБНОВЛЕНО: перемещение в нижний левый угол) === */
 .instructions {
     position: fixed;
-    bottom: 70px;  /* ИСПРАВЛЕНО: перемещено из top: 70px в bottom: 70px */
+    bottom: 70px;
     left: 20px;
     background: rgba(0,0,0,0.85);
     color: white;
@@ -707,7 +724,7 @@ body {
     font-size: 13px;
     z-index: 1000;
     transition: all 0.3s ease;
-    transform-origin: bottom left;  /* ИСПРАВЛЕНО: изменен с top left на bottom left */
+    transform-origin: bottom left;
     cursor: pointer;
     max-width: 600px;
     line-height: 1.4;
@@ -729,7 +746,7 @@ body {
 
 .info-btn {
     position: fixed;
-    bottom: 20px;  /* ИСПРАВЛЕНО: перемещено из top: 70px в bottom: 20px */
+    bottom: 20px;
     left: 20px;
     width: 40px;
     height: 40px;
@@ -755,6 +772,36 @@ body {
 .info-btn:hover {
     background: rgba(0,0,0,0.9);
     transform: scale(1.1);
+}
+
+/* === THEME TOGGLE BUTTON === */
+.theme-toggle {
+    position: fixed;
+    bottom: 20px;
+    left: 70px;
+    width: 40px;
+    height: 40px;
+    background: rgba(0,0,0,0.8);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 1001;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+}
+
+.theme-toggle:hover {
+    background: rgba(0,0,0,0.9);
+    transform: scale(1.1);
+}
+
+.theme-toggle:active {
+    transform: scale(0.95);
 }
 
 .add-note-btn {
@@ -821,7 +868,7 @@ body {
     max-width: 400px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.15);
     transform: translateY(20px);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, background-color 0.3s ease;
 }
 
 .role-modal-overlay.visible .role-modal {
@@ -831,6 +878,7 @@ body {
 .role-modal-header {
     padding: 24px 24px 16px;
     border-bottom: 1px solid #e8eaed;
+    transition: border-color 0.3s ease;
 }
 
 .role-modal-title {
@@ -838,12 +886,14 @@ body {
     font-weight: 600;
     color: #1a1a1a;
     margin: 0;
+    transition: color 0.3s ease;
 }
 
 .role-modal-subtitle {
     font-size: 14px;
     color: #5f6368;
     margin-top: 4px;
+    transition: color 0.3s ease;
 }
 
 .role-modal-body {
@@ -860,6 +910,7 @@ body {
     font-weight: 500;
     color: #1a1a1a;
     margin-bottom: 8px;
+    transition: color 0.3s ease;
 }
 
 .role-input {
@@ -870,7 +921,7 @@ body {
     font-size: 16px;
     color: #1a1a1a;
     background: #fff;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease, background-color 0.3s ease, color 0.3s ease;
     outline: none;
 }
 
@@ -928,6 +979,7 @@ body {
     background: transparent;
     color: #5f6368;
     border: 1px solid #dadce0;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.3s ease;
 }
 
 .role-modal-btn-secondary:hover {
@@ -975,6 +1027,7 @@ body {
     flex-direction: column;
     box-shadow: 0 20px 40px rgba(0,0,0,0.15);
     animation: slideUp 0.2s ease-out;
+    transition: background-color 0.3s ease;
 }
 
 .modal-header {
@@ -992,7 +1045,7 @@ body {
     background: transparent;
     padding: 8px 0;
     border-bottom: 1px solid transparent;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, color 0.3s ease;
 }
 
 .modal-title-input:focus {
@@ -1025,6 +1078,7 @@ body {
     font-weight: 500;
     color: #5f6368;
     margin: 0;
+    transition: color 0.3s ease;
 }
 
 .modal-tags-btn {
@@ -1067,7 +1121,7 @@ body {
     font-size: 14px;
     color: #1a1a1a;
     background: transparent;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background-color 0.3s ease, color 0.3s ease;
     margin-bottom: 8px;
 }
 
@@ -1134,6 +1188,7 @@ body {
     background: transparent;
     resize: none;
     font-family: inherit;
+    transition: color 0.3s ease;
 }
 
 .modal-content-textarea::placeholder {
@@ -1146,6 +1201,7 @@ body {
     display: flex;
     justify-content: flex-end;
     gap: 8px;
+    transition: border-color 0.3s ease;
 }
 
 .modal-btn {
@@ -1171,6 +1227,7 @@ body {
     background: transparent;
     color: #5f6368;
     border: 1px solid #dadce0;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.3s ease;
 }
 
 .modal-btn-secondary:hover {
@@ -1181,6 +1238,7 @@ body {
     color: #9aa0a6;
     font-style: italic;
     font-size: 13px;
+    transition: color 0.3s ease;
 }
 
 /* === MIGRATION & ERROR OVERLAYS === */
@@ -1206,6 +1264,7 @@ body {
     text-align: center;
     max-width: 400px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    transition: background-color 0.3s ease;
 }
 
 .migration-icon,
@@ -1220,6 +1279,7 @@ body {
     font-weight: 600;
     color: #1a1a1a;
     margin-bottom: 8px;
+    transition: color 0.3s ease;
 }
 
 .migration-subtitle,
@@ -1227,6 +1287,7 @@ body {
     font-size: 14px;
     color: #5f6368;
     margin-bottom: 20px;
+    transition: color 0.3s ease;
 }
 
 .migration-progress {
@@ -1235,6 +1296,7 @@ body {
     background: #f1f3f4;
     border-radius: 2px;
     overflow: hidden;
+    transition: background-color 0.3s ease;
 }
 
 .migration-progress-bar {
@@ -1312,6 +1374,379 @@ body {
     color: white;
 }
 
+/* === DARK THEME === */
+[data-theme="dark"] {
+    background: #1a1a1a;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .tabs-container {
+    background: #2d2d2d;
+    border-bottom-color: #444;
+}
+
+[data-theme="dark"] .tab {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .tab:hover {
+    background: #3a3a3a;
+    border-color: #555;
+}
+
+[data-theme="dark"] .tab.active {
+    background: #1e3a8a;
+    border-color: #3b82f6;
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .add-role-btn {
+    border-color: #555;
+    color: #ccc;
+}
+
+[data-theme="dark"] .add-role-btn:hover {
+    background: #3a3a3a;
+    border-color: #3b82f6;
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .blocks-palette {
+    background: #2d2d2d;
+    border-right-color: #444;
+}
+
+[data-theme="dark"] .palette-header {
+    background: #1a1a1a;
+    border-bottom-color: #444;
+}
+
+[data-theme="dark"] .palette-title {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .palette-subtitle {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .palette-search {
+    border-bottom-color: #444;
+}
+
+[data-theme="dark"] .search-input {
+    background: #3a3a3a;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .search-input::placeholder {
+    color: #888;
+}
+
+[data-theme="dark"] .palette-filters {
+    border-bottom-color: #444;
+}
+
+[data-theme="dark"] .filters-header {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .clear-filters {
+    background: #3a3a3a;
+    border-color: #555;
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .clear-filters:hover {
+    background: #1e3a8a;
+    border-color: #3b82f6;
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .group-header {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .group-count {
+    background: #3a3a3a;
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .block-item:hover {
+    background: #3a3a3a;
+}
+
+[data-theme="dark"] .block-title {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .block-preview {
+    color: #b0b0b0;
+}
+
+[data-theme="dark"] .palette-empty {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .palette-toggle {
+    background: #2d2d2d;
+    border-color: #444;
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .palette-toggle:hover {
+    background: #3a3a3a;
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .canvas-container {
+    background: #1a1a1a;
+    background-image: radial-gradient(circle, #333 1px, transparent 1px);
+}
+
+[data-theme="dark"] .tab-indicator {
+    background: rgba(255,255,255,0.1);
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .note {
+    background: #2d2d2d;
+    border-color: transparent;
+    color: #e0e0e0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+[data-theme="dark"] .note:hover {
+    border-color: #4285f4;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+[data-theme="dark"] .note-title {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .note-preview {
+    color: #b0b0b0;
+}
+
+[data-theme="dark"] .note-preview.empty {
+    color: #888;
+}
+
+[data-theme="dark"] .note-open-btn {
+    background: #3a3a3a;
+    border-color: #555;
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .note-open-btn:hover {
+    background: #1e3a8a;
+    border-color: #3b82f6;
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .note-action-btn {
+    background: rgba(0, 0, 0, 0.7);
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .note-action-btn:hover {
+    background: #3a3a3a;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .drag-handle {
+    background: rgba(0, 0, 0, 0.7);
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .drag-handle:hover {
+    background: #3a3a3a;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .connections-layer line {
+    stroke: #64b5f6;
+}
+
+[data-theme="dark"] .theme-toggle {
+    background: rgba(255,255,255,0.1);
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .theme-toggle:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+[data-theme="dark"] .info-btn {
+    background: rgba(255,255,255,0.1);
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .info-btn:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+[data-theme="dark"] .instructions {
+    background: rgba(255,255,255,0.1);
+    color: #e0e0e0;
+    backdrop-filter: blur(10px);
+}
+
+[data-theme="dark"] .instructions:hover {
+    background: rgba(255,255,255,0.15);
+}
+
+[data-theme="dark"] .instructions strong {
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .modal {
+    background: #2d2d2d;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .modal-title-input {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .modal-title-input::placeholder {
+    color: #888;
+}
+
+[data-theme="dark"] .modal-tags-label {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .modal-tags-btn {
+    background: transparent;
+    border-color: #555;
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .modal-tags-btn:hover {
+    background: #3a3a3a;
+    border-color: #3b82f6;
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .modal-tags-btn.editing {
+    background: #1e3a8a;
+    border-color: #3b82f6;
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .modal-tags-input {
+    background: #3a3a3a;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .modal-tags-input::placeholder {
+    color: #888;
+}
+
+[data-theme="dark"] .modal-content-textarea {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .modal-content-textarea::placeholder {
+    color: #888;
+}
+
+[data-theme="dark"] .modal-footer {
+    border-top-color: #444;
+}
+
+[data-theme="dark"] .modal-btn-secondary {
+    background: transparent;
+    border-color: #555;
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .modal-btn-secondary:hover {
+    background: #3a3a3a;
+    border-color: #3b82f6;
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .empty-tags-message {
+    color: #888;
+}
+
+[data-theme="dark"] .role-modal {
+    background: #2d2d2d;
+}
+
+[data-theme="dark"] .role-modal-header {
+    border-bottom-color: #444;
+}
+
+[data-theme="dark"] .role-modal-title {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .role-modal-subtitle {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .role-input-label {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .role-input {
+    background: #3a3a3a;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .role-input::placeholder {
+    color: #888;
+}
+
+[data-theme="dark"] .role-suggestion {
+    background: #3a3a3a;
+    border-color: #555;
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .role-suggestion:hover {
+    background: #1e3a8a;
+    border-color: #3b82f6;
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .role-modal-btn-secondary {
+    background: transparent;
+    border-color: #555;
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .role-modal-btn-secondary:hover {
+    background: #3a3a3a;
+    border-color: #3b82f6;
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .migration-modal,
+[data-theme="dark"] .error-modal {
+    background: #2d2d2d;
+}
+
+[data-theme="dark"] .migration-title,
+[data-theme="dark"] .error-title {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .migration-subtitle,
+[data-theme="dark"] .error-message {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .migration-progress {
+    background: #3a3a3a;
+}
+
 /* === ANIMATIONS === */
 @keyframes slideTagsDown {
     from {
@@ -1370,108 +1805,6 @@ body {
     100% { transform: translateX(100%); }
 }
 
-/* === DARK THEME === */
-[data-theme="dark"] {
-    background: #1a1a1a;
-    color: #e0e0e0;
-}
-
-[data-theme="dark"] .tabs-container {
-    background: #2d2d2d;
-    border-bottom-color: #444;
-}
-
-[data-theme="dark"] .tab {
-    color: #e0e0e0;
-}
-
-[data-theme="dark"] .tab:hover {
-    background: #3a3a3a;
-    border-color: #555;
-}
-
-[data-theme="dark"] .tab.active {
-    background: #1e3a8a;
-    border-color: #3b82f6;
-    color: #93c5fd;
-}
-
-[data-theme="dark"] .add-role-btn {
-    border-color: #555;
-    color: #ccc;
-}
-
-[data-theme="dark"] .add-role-btn:hover {
-    background: #3a3a3a;
-    border-color: #3b82f6;
-    color: #93c5fd;
-}
-
-[data-theme="dark"] .blocks-palette {
-    background: #2d2d2d;
-    border-right-color: #444;
-}
-
-[data-theme="dark"] .palette-header {
-    background: #1a1a1a;
-    border-bottom-color: #444;
-}
-
-[data-theme="dark"] .palette-title {
-    color: #e0e0e0;
-}
-
-[data-theme="dark"] .search-input {
-    background: #3a3a3a;
-    border-color: #555;
-    color: #e0e0e0;
-}
-
-[data-theme="dark"] .canvas-container {
-    background: #1a1a1a;
-    background-image: radial-gradient(circle, #333 1px, transparent 1px);
-}
-
-[data-theme="dark"] .note {
-    background: #2d2d2d;
-    border-color: transparent;
-    color: #e0e0e0;
-}
-
-[data-theme="dark"] .note:hover {
-    border-color: #4285f4;
-}
-
-[data-theme="dark"] .note-title {
-    color: #e0e0e0;
-}
-
-[data-theme="dark"] .note-preview {
-    color: #b0b0b0;
-}
-
-[data-theme="dark"] .drag-handle {
-    background: #555;
-    color: #ccc;
-}
-
-[data-theme="dark"] .connections-layer line {
-    stroke: #64b5f6;
-}
-
-[data-theme="dark"] .modal {
-    background: #2d2d2d;
-    color: #e0e0e0;
-}
-
-[data-theme="dark"] .modal-title-input {
-    color: #e0e0e0;
-}
-
-[data-theme="dark"] .modal-content-textarea {
-    color: #e0e0e0;
-}
-
 /* === RESPONSIVE (ОБНОВЛЕНО для нового позиционирования) === */
 @media (max-width: 768px) {
     .blocks-palette {
@@ -1514,7 +1847,7 @@ body {
         padding: 12px 16px;
         max-width: 90%;
         left: 5%;
-        bottom: 60px;  /* ИСПРАВЛЕНО: перемещено из top в bottom */
+        bottom: 80px;
     }
     
     .add-note-btn {
@@ -1529,8 +1862,16 @@ body {
         width: 35px;
         height: 35px;
         font-size: 14px;
-        bottom: 20px;  /* ИСПРАВЛЕНО: перемещено из top в bottom */
+        bottom: 20px;
         left: 20px;
+    }
+    
+    .theme-toggle {
+        width: 35px;
+        height: 35px;
+        font-size: 14px;
+        bottom: 20px;
+        left: 60px;
     }
     
     .modal {

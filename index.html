@@ -7,21 +7,37 @@
     <link rel="stylesheet" href="styles.css">
     <meta name="description" content="Notes App v2.0 - Модульное приложение для заметок с системой ролей и вкладок">
     <meta name="version" content="2.0">
+    
+    <!-- Инициализация темы из localStorage перед загрузкой страницы -->
+    <script>
+        // Быстрая инициализация темы чтобы избежать мерцания
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('notes-app-theme');
+                if (savedTheme && ['light', 'dark'].includes(savedTheme)) {
+                    document.body.setAttribute('data-theme', savedTheme);
+                } else {
+                    document.body.setAttribute('data-theme', 'dark');
+                }
+            } catch (error) {
+                console.warn('Could not load theme from localStorage:', error);
+                document.body.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
 </head>
 <body>
     <!-- Контейнер вкладок (создается динамически через TabsModule) -->
     <!-- <div class="tabs-container">...</div> -->
     
-    <!-- Info button -->
-    <button class="info-btn" title="Показать/скрыть инструкции">ℹ</button>
+    <!-- Info button (создается динамически через UIModule) -->
+    <!-- <button class="info-btn" title="Показать/скрыть инструкции">ℹ</button> -->
     
-    <!-- Instructions panel -->
-    <div class="instructions hidden">
-        <strong>🎯 Система ролей v2.0:</strong> Ctrl+1 = Основное дерево • Ctrl+2,3,4 = Роли • Ctrl+T = новая роль<br>
-        <strong>🔗 Связи:</strong> Ctrl+C = создать связь между блоками • Наведите на линию для удаления<br>
-        <strong>📝 Блоки:</strong> Пробел + мышь = перемещение холста • Двойной клик = новый блок • "Открыть" для редактирования<br>
-        <strong>⌨️ Горячие клавиши:</strong> Ctrl+E = экспорт • Ctrl+R = статистика • ? = показать/скрыть помощь
-    </div>
+    <!-- Theme toggle button (создается динамически через UIModule) -->
+    <!-- <button class="theme-toggle" title="Переключить тему">🌙</button> -->
+    
+    <!-- Instructions panel (создается динамически через UIModule) -->
+    <!-- <div class="instructions hidden">...</div> -->
 
     <!-- Main content container -->
     <div class="main-content">
@@ -41,7 +57,7 @@
     </div>
 
     <!-- Add button (динамически обновляется в зависимости от контекста) -->
-    <button class="add-note-btn" id="addBtn" title="Добавить элемент">+</button>
+    <!-- <button class="add-note-btn" id="addBtn" title="Добавить элемент">+</button> -->
 
     <!-- Модальные окна создаются динамически модулями -->
     <!-- Note modal - создается в NotesModule -->
@@ -85,6 +101,15 @@
                     .catch(error => console.log('SW registration failed'));
             });
         }
+        
+        // Дополнительная проверка темы после загрузки DOM
+        document.addEventListener('DOMContentLoaded', () => {
+            // Убеждаемся что тема установлена корректно
+            const currentTheme = document.body.getAttribute('data-theme');
+            if (!currentTheme) {
+                document.body.setAttribute('data-theme', 'dark');
+            }
+        });
     </script>
 </body>
 </html>

@@ -66,7 +66,7 @@ export class StateManager {
             ui: {
                 activeTab: 'main',           // main | roleId
                 instructionsVisible: false,
-                theme: 'light',
+                theme: 'dark',               // Темная тема по умолчанию
                 paletteOpen: false
             },
             

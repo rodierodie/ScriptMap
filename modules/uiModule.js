@@ -11,7 +11,8 @@ export class UIModule {
         this.elements = {
             infoBtn: null,
             instructions: null,
-            addNoteBtn: null
+            addNoteBtn: null,
+            themeToggle: null
         };
         
         this.init();
@@ -59,6 +60,22 @@ export class UIModule {
         this.elements.addNoteBtn.title = 'Добавить элемент';
         this.elements.addNoteBtn.innerHTML = '+';
         document.body.appendChild(this.elements.addNoteBtn);
+
+        // Создать переключатель темы
+        this.elements.themeToggle = document.createElement('button');
+        this.elements.themeToggle.className = 'theme-toggle';
+        this.elements.themeToggle.title = 'Переключить тему (светлая/темная)';
+        this.elements.themeToggle.innerHTML = this.getThemeIcon();
+        document.body.appendChild(this.elements.themeToggle);
+    }
+
+    /**
+     * Получить иконку для переключателя темы
+     * @returns {string} - HTML иконки
+     */
+    getThemeIcon() {
+        const currentTheme = this.state.get('ui.theme') || 'light';
+        return currentTheme === 'light' ? '🌙' : '☀️';
     }
 
     /**
@@ -89,6 +106,13 @@ export class UIModule {
         if (this.elements.addNoteBtn) {
             this.elements.addNoteBtn.addEventListener('click', () => {
                 this.handleAddRequest();
+            });
+        }
+
+        // Переключатель темы
+        if (this.elements.themeToggle) {
+            this.elements.themeToggle.addEventListener('click', () => {
+                this.toggleTheme();
             });
         }
 
@@ -264,6 +288,13 @@ export class UIModule {
                         this.centerCanvas();
                     }
                     break;
+
+                case 'd':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        this.toggleTheme();
+                    }
+                    break;
                     
                 case 'Escape':
                     if (this.state.get('ui.instructionsVisible')) {
@@ -371,6 +402,14 @@ export class UIModule {
     updateTheme(theme) {
         document.body.setAttribute('data-theme', theme);
         
+        // Обновить иконку переключателя
+        if (this.elements.themeToggle) {
+            this.elements.themeToggle.innerHTML = this.getThemeIcon();
+            this.elements.themeToggle.title = theme === 'light' ? 
+                'Переключить на темную тему' : 
+                'Переключить на светлую тему';
+        }
+        
         // Сохранить в localStorage
         try {
             localStorage.setItem('notes-app-theme', theme);
@@ -379,6 +418,9 @@ export class UIModule {
         }
         
         this.events.emit('ui:theme-changed', theme);
+        
+        // Показать уведомление о смене темы
+        this.showNotification(`Тема изменена на ${theme === 'light' ? 'светлую' : 'темную'}`, 'info', 1500);
     }
 
     /**
@@ -512,6 +554,7 @@ export class UIModule {
             `⌨️ Горячие клавиши:`,
             `• Ctrl+E = экспорт данных`,
             `• Ctrl+T = новая роль`,
+            `• Ctrl+D = смена темы`,
             `• Ctrl+1,2,3,4 = переключение вкладок`
         ].join('\n');
         
@@ -536,9 +579,13 @@ export class UIModule {
             const savedTheme = localStorage.getItem('notes-app-theme');
             if (savedTheme && ['light', 'dark'].includes(savedTheme)) {
                 this.state.set('ui.theme', savedTheme);
+            } else {
+                // Устанавливаем светлую тему по умолчанию
+                this.state.set('ui.theme', 'light');
             }
         } catch (error) {
             console.warn('Could not load theme from localStorage:', error);
+            this.state.set('ui.theme', 'light');
         }
     }
 

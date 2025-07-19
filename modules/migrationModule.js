@@ -106,7 +106,7 @@ export class MigrationModule {
             connections: v1Data.connections || [],
             ui: {
                 activeTab: "main",
-                theme: v1Data.ui?.theme || "light",
+                theme: v1Data.ui?.theme || "dark", // Темная тема по умолчанию
                 paletteOpen: false
             },
             migrationInfo: {
@@ -198,7 +198,7 @@ export class MigrationModule {
             connections: [],
             ui: {
                 activeTab: "main",
-                theme: "light",
+                theme: "dark", // Темная тема по умолчанию
                 paletteOpen: false
             }
         };
