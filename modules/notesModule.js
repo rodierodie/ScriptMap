@@ -592,9 +592,6 @@ export class NotesModule {
         });
     }
 
-    // Остальные методы остаются практически без изменений из оригинального NotesModule
-    // (getTagColor, openNoteModal, setupModalEvents, etc.)
-
     /**
      * Получить цвет для тега
      * @param {string} tag - Название тега
@@ -627,18 +624,14 @@ export class NotesModule {
         const block = this.state.get('blocks').find(b => b.id === blockId);
         if (!block) return;
 
-        // Остальная логика модального окна остается прежней
-        // но теперь всегда работаем с блоком, даже если открыли через ссылку
         this.createModal(block);
     }
 
     /**
-     * Создать модальное окно (упрощенная версия)
+     * Создать модальное окно
      * @param {Object} block - Блок для редактирования
      */
     createModal(block) {
-        // Создание модального окна - код остается прежним
-        // Главное отличие: всегда сохраняем изменения в блок
         const modalOverlay = document.createElement('div');
         modalOverlay.className = 'modal-overlay';
         modalOverlay.id = 'noteModal';
@@ -700,18 +693,173 @@ export class NotesModule {
         this.events.emit('note:modal-opened', block.id);
     }
 
-    // Остальные методы модального окна и вспомогательные функции
-    // остаются практически без изменений...
-
+    /**
+     * Настройка событий модального окна
+     * @param {HTMLElement} modalOverlay - Модальное окно
+     * @param {string} blockId - ID блока
+     */
     setupModalEvents(modalOverlay, blockId) {
-        // Код настройки событий модального окна
-        // Основное отличие: всегда сохраняем в блок
+        const tagsToggleBtn = modalOverlay.querySelector('#tagsToggleBtn');
+        const tagsInputSection = modalOverlay.querySelector('#tagsInputSection');
+        const tagsInput = modalOverlay.querySelector('#tagsInput');
+        const tagsDisplay = modalOverlay.querySelector('#tagsDisplay');
+        const tagsPreview = modalOverlay.querySelector('#tagsPreview');
+        
+        let isEditingTags = false;
+
+        // Переключение режима редактирования тегов
+        tagsToggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            isEditingTags = !isEditingTags;
+            
+            if (isEditingTags) {
+                tagsInputSection.classList.add('visible');
+                tagsToggleBtn.textContent = 'Скрыть теги';
+                tagsToggleBtn.classList.add('editing');
+                // Скрыть основное отображение во время редактирования
+                tagsDisplay.style.display = 'none';
+                tagsInput.focus();
+            } else {
+                tagsInputSection.classList.remove('visible');
+                tagsToggleBtn.textContent = 'Редактировать теги';
+                tagsToggleBtn.classList.remove('editing');
+                // Показать основное отображение
+                tagsDisplay.style.display = 'flex';
+                // Обновить основное отображение с новыми тегами
+                this.updateTagsDisplay(modalOverlay);
+                // Очистить превью
+                tagsPreview.innerHTML = '';
+            }
+        });
+
+        // Обработка ввода тегов - только превью, без дублирования
+        tagsInput.addEventListener('input', () => {
+            if (isEditingTags) {
+                this.updateTagsPreview(modalOverlay);
+            }
+        });
+
+        // Обработка Enter в поле тегов
+        tagsInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                tagsInput.blur();
+            }
+        });
+
+        // Закрытие по клику на оверлей
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                this.closeNoteModal();
+            }
+        });
+
+        // Закрытие по Escape
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                this.closeNoteModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
     }
 
+    /**
+     * Обновить отображение тегов
+     * @param {HTMLElement} modalOverlay - Модальное окно
+     */
     updateTagsDisplay(modalOverlay) {
-        // Код обновления отображения тегов
+        const tagsDisplay = modalOverlay.querySelector('#tagsDisplay');
+        const tagsInput = modalOverlay.querySelector('#tagsInput');
+        
+        if (!tagsDisplay || !tagsInput) return;
+        
+        const tagsString = tagsInput.value.trim();
+        const tags = tagsString ? tagsString.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+        
+        tagsDisplay.innerHTML = '';
+        
+        if (tags.length === 0) {
+            tagsDisplay.innerHTML = '<span class="empty-tags-message">Теги не добавлены</span>';
+            return;
+        }
+        
+        tags.forEach((tag) => {
+            const tagElement = document.createElement('span');
+            tagElement.className = 'modal-tag';
+            tagElement.style.backgroundColor = this.getTagColor(tag);
+            tagElement.innerHTML = `
+                ${this.escapeHtml(tag)}
+                <button class="modal-tag-remove" data-tag="${this.escapeHtml(tag)}">×</button>
+            `;
+            
+            // Обработчик удаления тега
+            const removeBtn = tagElement.querySelector('.modal-tag-remove');
+            removeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.removeTag(modalOverlay, tag);
+            });
+            
+            tagsDisplay.appendChild(tagElement);
+        });
     }
 
+    /**
+     * Обновить превью тегов при вводе (только для режима редактирования)
+     * @param {HTMLElement} modalOverlay - Модальное окно
+     */
+    updateTagsPreview(modalOverlay) {
+        const tagsPreview = modalOverlay.querySelector('#tagsPreview');
+        const tagsInput = modalOverlay.querySelector('#tagsInput');
+        
+        if (!tagsPreview || !tagsInput) return;
+        
+        const tagsString = tagsInput.value.trim();
+        const tags = tagsString ? tagsString.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+        
+        tagsPreview.innerHTML = '';
+        
+        if (tags.length === 0) return;
+        
+        tags.forEach((tag) => {
+            const tagElement = document.createElement('span');
+            tagElement.className = 'modal-tag';
+            tagElement.style.backgroundColor = this.getTagColor(tag);
+            tagElement.textContent = tag;
+            tagsPreview.appendChild(tagElement);
+        });
+    }
+
+    /**
+     * Удалить тег
+     * @param {HTMLElement} modalOverlay - Модальное окно
+     * @param {string} tagToRemove - Тег для удаления
+     */
+    removeTag(modalOverlay, tagToRemove) {
+        const tagsInput = modalOverlay.querySelector('#tagsInput');
+        const tagsInputSection = modalOverlay.querySelector('#tagsInputSection');
+        
+        if (!tagsInput) return;
+        
+        const tags = tagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag && tag !== tagToRemove);
+        tagsInput.value = tags.join(', ');
+        
+        // Если сейчас в режиме редактирования, обновить только превью
+        if (tagsInputSection && tagsInputSection.classList.contains('visible')) {
+            this.updateTagsPreview(modalOverlay);
+        } else {
+            // Если не в режиме редактирования, обновить основное отображение
+            this.updateTagsDisplay(modalOverlay);
+        }
+    }
+
+    /**
+     * Сохранить данные из модального окна
+     * @param {string} blockId - ID блока
+     * @param {string} title - Заголовок
+     * @param {string} content - Содержимое
+     * @param {string} tagsString - Строка с тегами
+     */
     saveNoteFromModal(blockId, title, content, tagsString) {
         const tags = tagsString ? 
             tagsString.split(',').map(tag => tag.trim()).filter(tag => tag) : 
@@ -727,6 +875,9 @@ export class NotesModule {
         this.events.emit('note:updated-from-modal', { blockId, updates });
     }
 
+    /**
+     * Закрыть модальное окно
+     */
     closeNoteModal() {
         const modal = document.getElementById('noteModal');
         if (modal) {
@@ -735,6 +886,11 @@ export class NotesModule {
         }
     }
 
+    /**
+     * Экранирование HTML
+     * @param {string} text - Текст
+     * @returns {string} - Экранированный текст
+     */
     escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');

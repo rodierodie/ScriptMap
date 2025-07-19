@@ -1561,3 +1561,128 @@ body {
         display: none;
     }
 }
+/* === ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ ТЕГОВ === */
+/* Добавить в styles.css после существующих стилей модального окна */
+
+.modal-tags-input-section {
+    display: none;
+    animation: slideTagsDown 0.2s ease-out;
+}
+
+.modal-tags-input-section.visible {
+    display: block;
+}
+
+.modal-tags-btn.editing {
+    background: #e8f0fe;
+    border-color: #4285f4;
+    color: #1a73e8;
+}
+
+.modal-tags-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 24px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e8eaed;
+}
+
+.modal-tags-preview:empty {
+    display: none;
+}
+
+.empty-tags-message {
+    color: #9aa0a6;
+    font-style: italic;
+    font-size: 13px;
+    padding: 4px 0;
+}
+
+/* Улучшение анимации тегов */
+@keyframes slideTagsDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        max-height: 200px;
+        transform: translateY(0);
+    }
+}
+
+/* Стили для кнопки удаления тега в модальном окне */
+.modal-tag {
+    position: relative;
+    animation: tagAppear 0.2s ease-out;
+}
+
+.modal-tag-remove {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0;
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 10px;
+    line-height: 1;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+    margin-left: 4px;
+}
+
+.modal-tag-remove:hover {
+    opacity: 1;
+    background: rgba(255,255,255,0.2);
+}
+
+/* Улучшение отображения тегов в модальном окне */
+.modal-tags-display {
+    min-height: 28px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    transition: opacity 0.2s ease;
+}
+
+.modal-tags-display:empty::after {
+    content: "Теги не добавлены";
+    color: #9aa0a6;
+    font-style: italic;
+    font-size: 13px;
+}
+
+/* Анимация появления тегов */
+@keyframes tagAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Улучшение разделения между превью и основными тегами */
+.modal-tags-preview::before {
+    content: "Превью:";
+    font-size: 11px;
+    color: #5f6368;
+    margin-right: 8px;
+    font-weight: 500;
+}
+
+.modal-tags-preview:empty::before {
+    display: none;
+}
