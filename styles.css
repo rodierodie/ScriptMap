@@ -457,19 +457,7 @@ body {
     opacity: 0.9;
 }
 
-.note.reference {
-    border-left: 4px solid #34a853;
-    position: relative;
-}
-
-.note.reference::before {
-    content: "🔗";
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    font-size: 12px;
-    opacity: 0.7;
-}
+/* УДАЛЕНО: Все стили для .note.reference для унификации внешнего вида */
 
 .canvas-container.connection-mode .note {
     cursor: pointer !important;
@@ -555,9 +543,7 @@ body {
     opacity: 1;
 }
 
-.note.reference .note-actions {
-    right: 28px; /* Сдвиг из-за иконки ссылки */
-}
+/* УДАЛЕНО: Специальный отступ для ссылок */
 
 .note-action-btn {
     width: 24px;
