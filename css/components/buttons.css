@@ -1,0 +1,293 @@
+/**
+ * Buttons Component - Notes App v2.0
+ * Все типы кнопок в приложении
+ */
+
+/* === БАЗОВАЯ КНОПКА === */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    font-size: var(--font-lg);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: var(--transition-all);
+    border: 1px solid transparent;
+    outline: none;
+    text-decoration: none;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none !important;
+}
+
+/* === РАЗМЕРЫ КНОПОК === */
+.btn-sm {
+    height: var(--btn-height-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-base);
+}
+
+.btn-md {
+    height: var(--btn-height-md);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    font-size: var(--font-lg);
+}
+
+.btn-lg {
+    height: var(--btn-height-lg);
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: var(--font-xl);
+}
+
+/* === ВАРИАНТЫ КНОПОК === */
+
+/* Основная кнопка */
+.btn-primary {
+    background: var(--color-primary);
+    color: var(--text-inverse);
+}
+
+.btn-primary:hover {
+    background: var(--color-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-primary);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+/* Вторичная кнопка */
+.btn-secondary {
+    background: transparent;
+    color: var(--text-secondary);
+    border-color: var(--border-medium);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-secondary);
+    border-color: var(--border-strong);
+}
+
+/* Успех */
+.btn-success {
+    background: var(--color-success);
+    color: var(--text-inverse);
+}
+
+.btn-success:hover {
+    background: var(--color-success-hover);
+    box-shadow: var(--shadow-success);
+}
+
+/* Опасность */
+.btn-danger {
+    background: var(--color-danger);
+    color: var(--text-inverse);
+}
+
+.btn-danger:hover {
+    background: var(--color-danger-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-danger);
+}
+
+.btn-danger:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(217, 48, 37, 0.3);
+}
+
+/* Прозрачная кнопка */
+.btn-ghost {
+    background: transparent;
+    color: var(--text-primary);
+}
+
+.btn-ghost:hover {
+    background: var(--bg-secondary);
+}
+
+/* === FLOATING ACTION BUTTON === */
+.add-note-btn {
+    position: fixed;
+    bottom: var(--spacing-3xl);
+    right: var(--spacing-3xl);
+    width: var(--btn-height-fab);
+    height: var(--btn-height-fab);
+    background: var(--color-primary);
+    border: none;
+    border-radius: var(--radius-round);
+    color: var(--text-inverse);
+    font-size: var(--font-4xl);
+    cursor: pointer;
+    box-shadow: var(--shadow-primary);
+    transition: var(--transition-transform), var(--transition-colors);
+    z-index: var(--z-header);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.add-note-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+}
+
+.add-note-btn:active {
+    transform: scale(0.95);
+}
+
+.add-note-btn.palette-mode {
+    background: var(--color-success);
+    box-shadow: var(--shadow-success);
+}
+
+.add-note-btn.palette-mode:hover {
+    background: var(--color-success-hover);
+    box-shadow: 0 6px 20px rgba(52, 168, 83, 0.4);
+}
+
+/* === INFO BUTTON === */
+.info-btn {
+    position: fixed;
+    bottom: var(--spacing-xl);
+    left: var(--spacing-xl);
+    width: var(--btn-height-lg);
+    height: var(--btn-height-lg);
+    background: var(--bg-overlay-strong);
+    border: none;
+    border-radius: var(--radius-round);
+    color: var(--text-inverse);
+    font-size: var(--font-xl);
+    cursor: pointer;
+    z-index: calc(var(--z-header) + 1);
+    transition: var(--transition-all);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.info-btn.hidden {
+    opacity: 0;
+    transform: scale(0);
+    pointer-events: none;
+}
+
+.info-btn:hover {
+    background: var(--bg-overlay);
+    transform: scale(1.1);
+}
+
+/* === ACTION BUTTONS === */
+.note-action-btn {
+    width: var(--btn-height-sm);
+    height: var(--btn-height-sm);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-base);
+    transition: var(--transition-all);
+    backdrop-filter: blur(4px);
+}
+
+.note-action-btn:hover {
+    background: var(--bg-muted);
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+.note-action-btn.duplicate:hover {
+    background: var(--color-success-light);
+    color: var(--color-success);
+}
+
+.note-action-btn.delete:hover {
+    background: var(--color-danger-light);
+    color: var(--color-danger);
+}
+
+/* === DRAG HANDLE === */
+.drag-handle {
+    width: var(--btn-height-sm);
+    height: var(--btn-height-sm);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--text-secondary);
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-xs);
+    transition: var(--transition-all);
+    backdrop-filter: blur(4px);
+}
+
+.drag-handle:before {
+    content: "⋮⋮";
+    letter-spacing: -2px;
+    line-height: 1;
+}
+
+.drag-handle:hover {
+    background: var(--bg-muted);
+    color: var(--text-primary);
+    transform: scale(1.1);
+    cursor: grabbing;
+}
+
+.drag-handle.dragging {
+    cursor: grabbing;
+    opacity: 1;
+}
+
+/* === ОТКРЫТИЕ ЗАМЕТКИ === */
+.note-open-btn {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-md) var(--spacing-md);
+    font-size: var(--font-base);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-all);
+}
+
+.note-open-btn:hover {
+    background: var(--color-primary-light);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    .add-note-btn {
+        width: var(--btn-height-xl);
+        height: var(--btn-height-xl);
+        font-size: var(--font-3xl);
+        bottom: var(--spacing-xl);
+        right: var(--spacing-xl);
+    }
+    
+    .info-btn {
+        width: 35px;
+        height: 35px;
+        font-size: var(--font-lg);
+        bottom: var(--spacing-xl);
+        left: var(--spacing-xl);
+    }
+}

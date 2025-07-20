@@ -1,0 +1,68 @@
+/**
+ * Connections Module - Notes App v2.0
+ * Связи между блоками
+ */
+
+/* === СЛОЙ СВЯЗЕЙ === */
+.connections-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: var(--z-connections);
+}
+
+/* === СВЯЗЬ === */
+.connection {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* === SVG ЭЛЕМЕНТЫ === */
+.connections-layer svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: var(--z-connections);
+}
+
+.connections-layer line {
+    transition: var(--transition-normal) stroke-width, var(--transition-normal) stroke;
+}
+
+/* === КНОПКА УДАЛЕНИЯ СВЯЗИ === */
+.connection-delete-btn {
+    transition: var(--transition-all);
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-lg);
+    background: var(--color-danger);
+    color: var(--text-inverse);
+    border-radius: var(--radius-round);
+    border: 2px solid var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    opacity: 0;
+    pointer-events: auto;
+}
+
+.connection-delete-btn:hover {
+    transform: scale(1.2) !important;
+    background: var(--color-danger-hover) !important;
+    box-shadow: var(--shadow-md);
+}
+
+.connection-delete-btn:active {
+    transform: scale(1.1) !important;
+    background: #b71c1c !important;
+}

@@ -1,0 +1,90 @@
+/**
+ * Main CSS - Notes App v2.0
+ * Главный файл импорта всех стилей
+ */
+
+/* === БАЗОВЫЕ СТИЛИ === */
+@import url('./base/variables.css');
+@import url('./base/reset.css');
+@import url('./base/typography.css');
+
+/* === КОМПОНЕНТЫ === */
+@import url('./components/buttons.css');
+@import url('./components/inputs.css');
+@import url('./components/modals.css');
+@import url('./components/notifications.css');
+
+/* === МОДУЛИ === */
+@import url('./modules/tabs.css');
+@import url('./modules/palette.css');
+@import url('./modules/canvas.css');
+@import url('./modules/notes.css');
+@import url('./modules/connections.css');
+
+/* === УТИЛИТЫ === */
+@import url('./utils/animations.css');
+@import url('./utils/responsive.css');
+
+/* === ДОПОЛНИТЕЛЬНЫЕ СТИЛИ === */
+
+/* Главный контент */
+.main-content {
+    flex: 1;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Утилиты отступов */
+.p-xs { padding: var(--spacing-xs); }
+.p-sm { padding: var(--spacing-sm); }
+.p-md { padding: var(--spacing-md); }
+.p-lg { padding: var(--spacing-lg); }
+.p-xl { padding: var(--spacing-xl); }
+
+.m-xs { margin: var(--spacing-xs); }
+.m-sm { margin: var(--spacing-sm); }
+.m-md { margin: var(--spacing-md); }
+.m-lg { margin: var(--spacing-lg); }
+.m-xl { margin: var(--spacing-xl); }
+
+/* Утилиты цветов фона */
+.bg-primary { background: var(--bg-primary); }
+.bg-secondary { background: var(--bg-secondary); }
+.bg-muted { background: var(--bg-muted); }
+
+/* Утилиты границ */
+.border { border: 1px solid var(--border-light); }
+.border-md { border: 1px solid var(--border-medium); }
+.border-strong { border: 1px solid var(--border-strong); }
+
+.rounded-sm { border-radius: var(--radius-sm); }
+.rounded-md { border-radius: var(--radius-md); }
+.rounded-lg { border-radius: var(--radius-lg); }
+.rounded-xl { border-radius: var(--radius-xl); }
+.rounded-full { border-radius: var(--radius-round); }
+
+/* Утилиты теней */
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+.shadow-xl { box-shadow: var(--shadow-xl); }
+
+/* Утилиты flex */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-row { flex-direction: row; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.flex-1 { flex: 1; }
+
+/* Утилиты позиционирования */
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+
+/* Утилиты overflow */
+.overflow-hidden { overflow: hidden; }
+.overflow-auto { overflow: auto; }
+.overflow-scroll { overflow: scroll; }

@@ -1,0 +1,61 @@
+/**
+ * Canvas Module - Notes App v2.0
+ * Холст для размещения блоков и ссылок
+ */
+
+/* === ОБЛАСТЬ ХОЛСТА === */
+.canvas-area {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* === КОНТЕЙНЕР ХОЛСТА === */
+.canvas-container {
+    flex: 1;
+    position: relative;
+    cursor: default;
+    background: 
+        radial-gradient(circle, var(--color-grid-dots) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
+    background-position: 0 0;
+}
+
+.canvas-container.panning {
+    cursor: grabbing;
+}
+
+.canvas-container.connection-mode {
+    cursor: crosshair !important;
+}
+
+.canvas-container.drag-over {
+    background-color: var(--color-primary-light);
+}
+
+/* === ХОЛСТ === */
+.canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--canvas-size);
+    height: var(--canvas-size);
+    transform-origin: 0 0;
+}
+
+/* === РЕЖИМЫ ХОЛСТА === */
+.canvas-container.main-tree-mode {
+    /* Стили для основного дерева */
+}
+
+.canvas-container.role-mode {
+    /* Стили для режима ролей */
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    .canvas-container {
+        background-size: 15px 15px;
+    }
+}

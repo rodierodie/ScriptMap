@@ -1,0 +1,245 @@
+/**
+ * Palette Module - Notes App v2.0
+ * Палитра блоков для компоновки ролей
+ */
+
+/* === КОНТЕЙНЕР ПАЛИТРЫ === */
+.blocks-palette {
+    width: var(--palette-width);
+    background: var(--bg-primary);
+    border-right: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    transform: translateX(-100%);
+    transition: var(--transition-transform);
+    position: relative;
+    z-index: var(--z-palette);
+    flex-shrink: 0;
+}
+
+.blocks-palette.open {
+    transform: translateX(0);
+}
+
+/* === ЗАГОЛОВОК ПАЛИТРЫ === */
+.palette-header {
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg-secondary);
+    flex-shrink: 0;
+}
+
+.palette-title {
+    font-size: var(--font-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.palette-subtitle {
+    font-size: var(--font-md);
+    color: var(--text-secondary);
+    line-height: var(--line-height-tight);
+}
+
+/* === ПОИСК === */
+.palette-search {
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-bottom: 1px solid var(--border-light);
+    flex-shrink: 0;
+}
+
+/* === ФИЛЬТРЫ === */
+.palette-filters {
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-bottom: 1px solid var(--border-light);
+    flex-shrink: 0;
+}
+
+.filters-header {
+    font-size: var(--font-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.filters-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+}
+
+.filter-tag {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border: none;
+    border-radius: var(--radius-xl);
+    font-size: var(--font-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-inverse);
+    cursor: pointer;
+    transition: var(--transition-all);
+    opacity: 0.7;
+}
+
+.filter-tag:hover {
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+.filter-tag.active {
+    opacity: 1;
+    box-shadow: var(--shadow-sm);
+}
+
+.clear-filters {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-xl);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: var(--font-sm);
+    cursor: pointer;
+    transition: var(--transition-all);
+}
+
+.clear-filters:hover {
+    background: var(--color-primary-light);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+/* === СОДЕРЖИМОЕ ПАЛИТРЫ === */
+.palette-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-lg) 0;
+}
+
+/* === ГРУППЫ БЛОКОВ === */
+.blocks-group {
+    margin-bottom: var(--spacing-xl);
+}
+
+.group-header {
+    padding: var(--spacing-sm) var(--spacing-xl);
+    font-size: var(--font-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.group-count {
+    background: var(--bg-muted);
+    color: var(--text-secondary);
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-xs);
+}
+
+/* === ЭЛЕМЕНТЫ БЛОКОВ === */
+.block-item {
+    padding: var(--spacing-md) var(--spacing-xl);
+    cursor: pointer;
+    transition: var(--transition-all);
+    border-left: 3px solid transparent;
+}
+
+.block-item:hover {
+    background: var(--bg-secondary);
+    border-left-color: var(--color-primary);
+}
+
+.block-title {
+    font-size: var(--font-lg);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+    line-height: var(--line-height-tight);
+}
+
+.block-preview {
+    font-size: var(--font-base);
+    color: var(--text-secondary);
+    line-height: var(--line-height-tight);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    margin-bottom: var(--spacing-md);
+}
+
+.block-tags {
+    display: flex;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+}
+
+.block-tag {
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-inverse);
+}
+
+/* === ПУСТОЕ СОСТОЯНИЕ === */
+.palette-empty {
+    padding: var(--spacing-4xl) var(--spacing-xl);
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.empty-icon {
+    font-size: 32px;
+    margin-bottom: var(--spacing-md);
+}
+
+.empty-title {
+    font-size: var(--font-xl);
+    font-weight: var(--font-weight-medium);
+    margin-bottom: var(--spacing-xs);
+}
+
+.empty-subtitle {
+    font-size: var(--font-md);
+    opacity: 0.8;
+}
+
+/* === ПЕРЕКЛЮЧАТЕЛЬ ПАЛИТРЫ === */
+.palette-toggle {
+    position: absolute;
+    right: calc(-1 * var(--spacing-4xl));
+    top: 50%;
+    transform: translateY(-50%);
+    width: var(--spacing-4xl);
+    height: 80px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-left: none;
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-xl);
+    color: var(--text-secondary);
+    transition: var(--transition-all);
+    z-index: calc(var(--z-palette) + 1);
+}
+
+.palette-toggle:hover {
+    background: var(--bg-secondary);
+    color: var(--color-primary);
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    .blocks-palette {
+        width: 280px;
+    }
+}

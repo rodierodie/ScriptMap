@@ -1,6 +1,9 @@
 /**
  * UI Module v2.0 - Управление пользовательским интерфейсом с поддержкой вкладок
+ * Обновлено: убрана логика управления темами (вынесена в ThemeManager)
  */
+
+// ThemeManager будет создаваться динамически для избежания конфликтов импорта
 export class UIModule {
     constructor(state, events) {
         this.state = state;
@@ -14,7 +17,111 @@ export class UIModule {
             addNoteBtn: null
         };
         
+        // Создать менеджер тем динамически
+        this.themeManager = this.createThemeManager(state, events);
+        
         this.init();
+    }
+
+    /**
+     * Создать менеджер тем
+     * @param {Object} state - Состояние приложения
+     * @param {Object} events - Система событий
+     * @returns {Object} - Менеджер тем
+     */
+    createThemeManager(state, events) {
+        // Простой менеджер тем встроенный в UI модуль
+        return {
+            currentTheme: 'light',
+            
+            init() {
+                this.loadThemeFromStorage();
+                this.applyTheme(this.currentTheme);
+            },
+            
+            loadThemeFromStorage() {
+                try {
+                    const savedTheme = localStorage.getItem('notes-app-theme');
+                    if (savedTheme && ['light', 'dark'].includes(savedTheme)) {
+                        this.currentTheme = savedTheme;
+                    }
+                } catch (error) {
+                    console.warn('Could not load theme from localStorage:', error);
+                }
+            },
+            
+            setTheme(theme) {
+                if (!['light', 'dark'].includes(theme)) return;
+                
+                this.currentTheme = theme;
+                this.applyTheme(theme);
+                this.saveThemeToStorage(theme);
+                
+                events.emit('theme:changed', theme);
+            },
+            
+            toggleTheme() {
+                const newTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+                this.setTheme(newTheme);
+            },
+            
+            applyTheme(theme) {
+                document.body.removeAttribute('data-theme');
+                if (theme !== 'light') {
+                    document.body.setAttribute('data-theme', theme);
+                }
+            },
+            
+            saveThemeToStorage(theme) {
+                try {
+                    localStorage.setItem('notes-app-theme', theme);
+                } catch (error) {
+                    console.warn('Could not save theme to localStorage:', error);
+                }
+            },
+            
+            getCurrentTheme() {
+                return this.currentTheme;
+            },
+            
+            createThemeToggle(container) {
+                const toggle = document.createElement('button');
+                toggle.className = 'theme-toggle btn btn-sm';
+                toggle.style.cssText = `
+                    margin-left: var(--spacing-sm);
+                    background: var(--bg-secondary);
+                    border: 1px solid var(--border-medium);
+                    color: var(--text-secondary);
+                    font-size: var(--font-lg);
+                `;
+                
+                const updateToggle = () => {
+                    toggle.innerHTML = this.currentTheme === 'light' ? '🌙' : '☀️';
+                    toggle.title = `Переключить на ${this.currentTheme === 'light' ? 'темную' : 'светлую'} тему`;
+                };
+                
+                toggle.addEventListener('click', () => {
+                    this.toggleTheme();
+                });
+                
+                events.on('theme:changed', updateToggle);
+                updateToggle();
+                container.appendChild(toggle);
+                
+                return toggle;
+            },
+            
+            getStats() {
+                return {
+                    currentTheme: this.currentTheme,
+                    availableThemes: 2
+                };
+            },
+            
+            destroy() {
+                // Cleanup если нужно
+            }
+        };
     }
 
     /**
@@ -26,6 +133,9 @@ export class UIModule {
         this.setupEventListeners();
         this.setupStateWatchers();
         this.setupKeyboardShortcuts();
+        
+        // Инициализировать менеджер тем
+        this.themeManager.init();
         
         console.log('🎛️ UI module v2.0 initialized');
     }
@@ -198,11 +308,6 @@ export class UIModule {
             this.updateInstructionsVisibility(visible);
         });
 
-        // Отслеживание темы
-        this.state.watch('ui.theme', (theme) => {
-            this.updateTheme(theme);
-        });
-
         // Отслеживание активной вкладки для обновления UI
         this.state.watch('ui.activeTab', (newTab) => {
             this.updateUIForTab(newTab);
@@ -275,6 +380,13 @@ export class UIModule {
                     if (e.ctrlKey && e.shiftKey) {
                         e.preventDefault();
                         this.showConnectionsStats();
+                    }
+                    break;
+
+                case 't':
+                    if (e.ctrlKey && e.shiftKey) {
+                        e.preventDefault();
+                        this.themeManager.toggleTheme();
                     }
                     break;
             }
@@ -362,32 +474,6 @@ export class UIModule {
             
             alert(message);
         }, 100);
-    }
-
-    /**
-     * Обновить тему приложения
-     * @param {string} theme - Название темы ('light', 'dark')
-     */
-    updateTheme(theme) {
-        document.body.setAttribute('data-theme', theme);
-        
-        // Сохранить в localStorage
-        try {
-            localStorage.setItem('notes-app-theme', theme);
-        } catch (error) {
-            console.warn('Could not save theme to localStorage:', error);
-        }
-        
-        this.events.emit('ui:theme-changed', theme);
-    }
-
-    /**
-     * Переключить тему
-     */
-    toggleTheme() {
-        const currentTheme = this.state.get('ui.theme');
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        this.state.set('ui.theme', newTheme);
     }
 
     /**
@@ -509,9 +595,12 @@ export class UIModule {
             `• Слов: ${totalWords}`,
             `• Средняя длина блока: ${blocks.length > 0 ? Math.round(totalCharacters / blocks.length) : 0} символов`,
             ``,
+            `🎨 Тема: ${this.themeManager.getCurrentTheme()}`,
+            ``,
             `⌨️ Горячие клавиши:`,
             `• Ctrl+E = экспорт данных`,
             `• Ctrl+T = новая роль`,
+            `• Ctrl+Shift+T = переключить тему`,
             `• Ctrl+1,2,3,4 = переключение вкладок`
         ].join('\n');
         
@@ -524,38 +613,18 @@ export class UIModule {
             references: totalReferences,
             connections: connections.length,
             characters: totalCharacters, 
-            words: totalWords 
+            words: totalWords,
+            theme: this.themeManager.getCurrentTheme()
         });
     }
 
     /**
-     * Инициализировать тему из localStorage
+     * Создать переключатель темы в контейнере
+     * @param {HTMLElement} container - Контейнер для переключателя
+     * @returns {HTMLElement} - Созданный переключатель
      */
-    initializeTheme() {
-        try {
-            const savedTheme = localStorage.getItem('notes-app-theme');
-            if (savedTheme && ['light', 'dark'].includes(savedTheme)) {
-                this.state.set('ui.theme', savedTheme);
-            }
-        } catch (error) {
-            console.warn('Could not load theme from localStorage:', error);
-        }
-    }
-
-    /**
-     * Обработка изменения размера окна (обновлена для нижнего позиционирования)
-     */
-    handleResize() {
-        // Если инструкции видны, проверить помещаются ли они в новое окно
-        if (this.state.get('ui.instructionsVisible') && this.elements.instructions) {
-            const rect = this.elements.instructions.getBoundingClientRect();
-            
-            // Изменена логика: теперь проверяем не выходят ли инструкции за верхний край (т.к. они внизу)
-            if (rect.left < 0 || rect.top < 0 || rect.right > window.innerWidth) {
-                this.hideInstructions();
-                this.showNotification('Инструкции скрыты из-за изменения размера окна', 'info', 2000);
-            }
-        }
+    createThemeToggle(container) {
+        return this.themeManager.createThemeToggle(container);
     }
 
     /**
@@ -603,7 +672,7 @@ export class UIModule {
         return {
             version: this.version,
             instructionsVisible: this.state.get('ui.instructionsVisible'),
-            theme: this.state.get('ui.theme'),
+            theme: this.themeManager.getCurrentTheme(),
             activeTab: this.state.get('ui.activeTab'),
             paletteOpen: this.state.get('ui.paletteOpen')
         };
@@ -618,7 +687,7 @@ export class UIModule {
             version: this.version,
             elementsCreated: Object.keys(this.elements).length,
             notificationsShown: 0, // Можно добавить счетчик
-            themeChanges: 0, // Можно добавить счетчик
+            themeStats: this.themeManager.getStats(),
             instructionsToggled: 0 // Можно добавить счетчик
         };
     }
@@ -627,6 +696,11 @@ export class UIModule {
      * Уничтожение модуля
      */
     destroy() {
+        // Удалить менеджер тем
+        if (this.themeManager) {
+            this.themeManager.destroy();
+        }
+        
         // Удалить созданные элементы
         Object.values(this.elements).forEach(element => {
             if (element && element.parentNode) {

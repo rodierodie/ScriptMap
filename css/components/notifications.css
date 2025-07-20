@@ -1,0 +1,240 @@
+/**
+ * Notifications Component - Notes App v2.0
+ * Система уведомлений
+ */
+
+/* === БАЗОВОЕ УВЕДОМЛЕНИЕ === */
+.notification {
+    position: fixed;
+    top: var(--spacing-xl);
+    right: var(--spacing-xl);
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    z-index: var(--z-modal);
+    font-size: var(--font-lg);
+    max-width: 300px;
+    animation: slideIn var(--transition-slow);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+/* === ТИПЫ УВЕДОМЛЕНИЙ === */
+.notification-info {
+    background: var(--color-primary);
+    color: var(--text-inverse);
+}
+
+.notification-success {
+    background: var(--color-success);
+    color: var(--text-inverse);
+}
+
+.notification-warning {
+    background: var(--color-warning);
+    color: var(--text-inverse);
+}
+
+.notification-error {
+    background: var(--color-danger);
+    color: var(--text-inverse);
+}
+
+/* === ИНСТРУКЦИИ === */
+.instructions {
+    position: fixed;
+    bottom: 70px;
+    left: var(--spacing-xl);
+    background: rgba(0, 0, 0, 0.85);
+    color: var(--text-inverse);
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-md);
+    z-index: var(--z-header);
+    transition: var(--transition-all);
+    transform-origin: bottom left;
+    cursor: pointer;
+    max-width: 600px;
+    line-height: var(--line-height-normal);
+}
+
+.instructions.hidden {
+    opacity: 0;
+    transform: scale(0);
+    pointer-events: none;
+}
+
+.instructions:hover {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+.instructions strong {
+    color: #64b5f6;
+}
+
+/* === СИСТЕМНЫЕ ОВЕРЛЕИ === */
+
+/* Миграция */
+.migration-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-overlay-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-system);
+}
+
+.migration-modal {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-4xl);
+    text-align: center;
+    max-width: 400px;
+    box-shadow: var(--shadow-xl);
+}
+
+.migration-icon {
+    font-size: 48px;
+    margin-bottom: var(--spacing-lg);
+}
+
+.migration-title {
+    font-size: var(--font-3xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.migration-subtitle {
+    font-size: var(--font-lg);
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xl);
+}
+
+.migration-progress {
+    width: 100%;
+    height: 4px;
+    background: var(--bg-muted);
+    border-radius: var(--radius-xs);
+    overflow: hidden;
+}
+
+.migration-progress-bar {
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: var(--radius-xs);
+    animation: progressFlow 2s ease-in-out infinite;
+}
+
+/* Ошибки */
+.error-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-overlay-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-system);
+}
+
+.error-modal {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-4xl);
+    text-align: center;
+    max-width: 400px;
+    box-shadow: var(--shadow-xl);
+}
+
+.error-icon {
+    font-size: 48px;
+    margin-bottom: var(--spacing-lg);
+}
+
+.error-title {
+    font-size: var(--font-3xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.error-message {
+    font-size: var(--font-lg);
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xl);
+}
+
+.error-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+}
+
+.error-actions button {
+    padding: var(--spacing-md) var(--spacing-xl);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-lg);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: var(--transition-all);
+}
+
+.error-actions button:first-child {
+    background: var(--color-primary);
+    color: var(--text-inverse);
+}
+
+.error-actions button:first-child:hover {
+    background: var(--color-primary-hover);
+}
+
+.error-actions button:last-child {
+    background: var(--color-danger);
+    color: var(--text-inverse);
+}
+
+.error-actions button:last-child:hover {
+    background: var(--color-danger-hover);
+}
+
+/* === ПОДСКАЗКИ НА ХОЛСТЕ === */
+.canvas-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg-overlay-strong);
+    color: var(--text-inverse);
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-radius: var(--radius-md);
+    font-size: var(--font-lg);
+    z-index: var(--z-header);
+    pointer-events: none;
+    animation: fadeInOut var(--transition-slow);
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    .instructions {
+        font-size: var(--font-base);
+        padding: var(--spacing-md) var(--spacing-lg);
+        max-width: 90%;
+        left: 5%;
+        bottom: 60px;
+    }
+    
+    .notification {
+        right: var(--spacing-md);
+        top: var(--spacing-md);
+        max-width: calc(100% - var(--spacing-2xl));
+    }
+}

@@ -1,0 +1,184 @@
+/**
+ * Inputs Component - Notes App v2.0
+ * Поля ввода, текстовые области и элементы форм
+ */
+
+/* === БАЗОВЫЕ ПОЛЯ ВВОДА === */
+.input {
+    width: 100%;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-xl);
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    transition: var(--transition-colors);
+    outline: none;
+}
+
+.input:focus {
+    border-color: var(--color-primary);
+}
+
+.input::placeholder {
+    color: var(--text-muted);
+}
+
+/* === РАЗМЕРЫ === */
+.input-sm {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-lg);
+}
+
+.input-lg {
+    padding: var(--spacing-lg) var(--spacing-xl);
+    font-size: var(--font-2xl);
+}
+
+/* === ПОИСК === */
+.search-input {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-md);
+    font-size: var(--font-lg);
+    outline: none;
+    transition: var(--transition-colors);
+}
+
+.search-input:focus {
+    border-color: var(--color-primary);
+}
+
+/* === ЗАГОЛОВОК МОДАЛЬНЫХ ОКОН === */
+.modal-title-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: var(--font-4xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    background: transparent;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid transparent;
+    transition: var(--transition-colors);
+}
+
+.modal-title-input:focus {
+    border-bottom-color: var(--color-primary);
+}
+
+.modal-title-input::placeholder {
+    color: var(--text-muted);
+}
+
+/* === ТЕГИ === */
+.modal-tags-input {
+    width: 100%;
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-lg);
+    color: var(--text-primary);
+    background: transparent;
+    transition: var(--transition-colors);
+    margin-bottom: var(--spacing-sm);
+}
+
+.modal-tags-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.modal-tags-input::placeholder {
+    color: var(--text-muted);
+}
+
+/* === TEXTAREA === */
+.modal-content-textarea {
+    width: 100%;
+    min-height: 300px;
+    border: none;
+    outline: none;
+    font-size: var(--font-xl);
+    line-height: var(--line-height-relaxed);
+    color: var(--text-primary);
+    background: transparent;
+    resize: none;
+    font-family: inherit;
+}
+
+.modal-content-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+/* === РОЛИ === */
+.role-input {
+    width: 100%;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: 2px solid var(--border-medium);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-xl);
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    transition: var(--transition-colors);
+    outline: none;
+}
+
+.role-input:focus {
+    border-color: var(--color-primary);
+}
+
+.role-input::placeholder {
+    color: var(--text-muted);
+}
+
+/* === ЛЕЙБЛЫ === */
+.role-input-label {
+    display: block;
+    font-size: var(--font-lg);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.modal-tags-label {
+    font-size: var(--font-lg);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* === СОСТОЯНИЯ === */
+.input:disabled,
+.search-input:disabled,
+.role-input:disabled {
+    background: var(--bg-muted);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    border-color: var(--border-light);
+}
+
+.input.error,
+.search-input.error,
+.role-input.error {
+    border-color: var(--color-danger);
+}
+
+.input.success,
+.search-input.success,
+.role-input.success {
+    border-color: var(--color-success);
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    .modal-title-input {
+        font-size: var(--font-3xl);
+    }
+    
+    .modal-content-textarea {
+        font-size: var(--font-lg);
+        min-height: 200px;
+    }
+}

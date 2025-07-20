@@ -1,0 +1,363 @@
+/**
+ * Animations - Notes App v2.0
+ * Анимации и переходы
+ */
+
+/* === ОСНОВНЫЕ АНИМАЦИИ === */
+
+@keyframes fadeIn {
+    from { 
+        opacity: 0; 
+    }
+    to { 
+        opacity: 1; 
+    }
+}
+
+@keyframes fadeOut {
+    from { 
+        opacity: 1; 
+    }
+    to { 
+        opacity: 0; 
+    }
+}
+
+@keyframes fadeInOut {
+    0% { 
+        opacity: 0; 
+    }
+    50% { 
+        opacity: 1; 
+    }
+    100% { 
+        opacity: 0; 
+    }
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(var(--spacing-xl));
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideDown {
+    from { 
+        opacity: 0;
+        transform: translateY(calc(-1 * var(--spacing-xl)));
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+@keyframes slideTagsDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+        transform: translateY(calc(-1 * var(--spacing-md)));
+    }
+    to {
+        opacity: 1;
+        max-height: 200px;
+        transform: translateY(0);
+    }
+}
+
+@keyframes progressFlow {
+    0% { 
+        transform: translateX(-100%); 
+    }
+    50% { 
+        transform: translateX(0%); 
+    }
+    100% { 
+        transform: translateX(100%); 
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes bounce {
+    0%, 20%, 53%, 80%, 100% {
+        transform: translate3d(0, 0, 0);
+    }
+    40%, 43% {
+        transform: translate3d(0, -10px, 0);
+    }
+    70% {
+        transform: translate3d(0, -5px, 0);
+    }
+    90% {
+        transform: translate3d(0, -2px, 0);
+    }
+}
+
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-2px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(2px);
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes scaleUp {
+    from {
+        transform: scale(0);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes scaleDown {
+    from {
+        transform: scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: scale(0);
+        opacity: 0;
+    }
+}
+
+/* === УТИЛИТЫ АНИМАЦИЙ === */
+
+.animate-fade-in {
+    animation: fadeIn var(--transition-normal);
+}
+
+.animate-fade-out {
+    animation: fadeOut var(--transition-normal);
+}
+
+.animate-slide-up {
+    animation: slideUp var(--transition-normal);
+}
+
+.animate-slide-down {
+    animation: slideDown var(--transition-normal);
+}
+
+.animate-slide-in {
+    animation: slideIn var(--transition-slow);
+}
+
+.animate-slide-out {
+    animation: slideOut var(--transition-slow);
+}
+
+.animate-pulse {
+    animation: pulse 2s infinite;
+}
+
+.animate-bounce {
+    animation: bounce 1s;
+}
+
+.animate-shake {
+    animation: shake 0.8s;
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+.animate-scale-up {
+    animation: scaleUp var(--transition-normal);
+}
+
+.animate-scale-down {
+    animation: scaleDown var(--transition-normal);
+}
+
+/* === СОСТОЯНИЯ HOVER === */
+
+.hover-lift {
+    transition: var(--transition-transform);
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+}
+
+.hover-scale {
+    transition: var(--transition-transform);
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+.hover-rotate {
+    transition: var(--transition-transform);
+}
+
+.hover-rotate:hover {
+    transform: rotate(5deg);
+}
+
+/* === ПЕРЕХОДЫ СТРАНИЦ === */
+
+.page-enter {
+    opacity: 0;
+    transform: translateY(var(--spacing-xl));
+}
+
+.page-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity var(--transition-slow), transform var(--transition-slow);
+}
+
+.page-exit {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.page-exit-active {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--spacing-xl)));
+    transition: opacity var(--transition-slow), transform var(--transition-slow);
+}
+
+/* === LOADING СОСТОЯНИЯ === */
+
+.loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    animation: loading-shimmer 1.5s infinite;
+}
+
+@keyframes loading-shimmer {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+/* === FOCUS АНИМАЦИИ === */
+
+.focus-ring {
+    transition: var(--transition-colors);
+}
+
+.focus-ring:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    animation: pulse-ring 0.6s ease-out;
+}
+
+@keyframes pulse-ring {
+    0% {
+        box-shadow: 0 0 0 0 var(--color-primary);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(66, 133, 244, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(66, 133, 244, 0);
+    }
+}
+
+/* === СПЕЦИАЛЬНЫЕ ЭФФЕКТЫ === */
+
+.glass-effect {
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.neon-glow {
+    box-shadow: 
+        0 0 5px var(--color-primary),
+        0 0 10px var(--color-primary),
+        0 0 15px var(--color-primary);
+}
+
+.text-glow {
+    text-shadow: 
+        0 0 10px currentColor,
+        0 0 20px currentColor,
+        0 0 30px currentColor;
+}
+
+/* === REDUCED MOTION === */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

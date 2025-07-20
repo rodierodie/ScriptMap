@@ -1,0 +1,141 @@
+/**
+ * Notes Module - Notes App v2.0
+ * Стили для блоков и ссылок
+ */
+
+/* === БАЗОВЫЙ БЛОК/ССЫЛКА === */
+.note {
+    position: absolute;
+    min-width: var(--note-min-width);
+    max-width: var(--note-max-width);
+    min-height: var(--note-min-height);
+    background: var(--bg-primary);
+    border: 2px solid transparent;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-colors), var(--transition-transform);
+    padding: var(--spacing-lg);
+    z-index: var(--z-notes);
+}
+
+.note:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-md);
+}
+
+.note.editing {
+    border-color: var(--color-primary);
+}
+
+.note.dragging {
+    transform: rotate(2deg);
+    z-index: var(--z-dragging);
+    opacity: 0.9;
+}
+
+/* === ССЫЛКИ === */
+.note.reference {
+    border-left: 4px solid var(--color-success);
+    position: relative;
+}
+
+.note.reference::before {
+    content: "🔗";
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    font-size: var(--font-base);
+    opacity: 0.7;
+}
+
+/* === СОДЕРЖИМОЕ ЗАМЕТКИ === */
+.note-title {
+    font-size: var(--font-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+    line-height: var(--line-height-tight);
+    word-break: break-word;
+}
+
+.note-preview {
+    font-size: var(--font-lg);
+    color: var(--text-secondary);
+    line-height: var(--line-height-normal);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    margin-bottom: var(--spacing-sm);
+}
+
+.note-preview.empty {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* === ТЕГИ === */
+.note-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-md);
+    min-height: var(--spacing-xl);
+}
+
+.note-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-xl);
+    font-size: var(--font-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-inverse);
+    text-shadow: var(--text-shadow);
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* === ДЕЙСТВИЯ С ЗАМЕТКОЙ === */
+.note-actions {
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    display: flex;
+    gap: var(--spacing-xs);
+    opacity: 0;
+    transition: var(--transition-opacity);
+}
+
+.note:hover .note-actions {
+    opacity: 1;
+}
+
+.note.reference .note-actions {
+    right: calc(var(--spacing-2xl) + var(--spacing-sm)); /* Сдвиг из-за иконки ссылки */
+}
+
+/* === РЕЖИМ СОЕДИНЕНИЯ === */
+.canvas-container.connection-mode .note {
+    cursor: pointer !important;
+    box-shadow: 0 0 10px var(--color-primary);
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    .note {
+        min-width: 150px;
+        min-height: 80px;
+        padding: var(--spacing-md);
+    }
+    
+    .note-title {
+        font-size: var(--font-lg);
+    }
+    
+    .note-preview {
+        font-size: var(--font-md);
+    }
+}

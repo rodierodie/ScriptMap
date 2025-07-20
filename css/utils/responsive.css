@@ -1,0 +1,395 @@
+/**
+ * Responsive - Notes App v2.0
+ * Адаптивные стили для разных устройств
+ */
+
+/* === УТИЛИТЫ ВИДИМОСТИ === */
+
+/* Скрытие на мобильных */
+@media (max-width: 767px) {
+    .hidden-mobile {
+        display: none !important;
+    }
+}
+
+/* Скрытие на планшетах */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .hidden-tablet {
+        display: none !important;
+    }
+}
+
+/* Скрытие на десктопе */
+@media (min-width: 1024px) {
+    .hidden-desktop {
+        display: none !important;
+    }
+}
+
+/* Показ только на мобильных */
+@media (min-width: 768px) {
+    .mobile-only {
+        display: none !important;
+    }
+}
+
+/* Показ только на планшетах */
+@media (max-width: 767px), (min-width: 1024px) {
+    .tablet-only {
+        display: none !important;
+    }
+}
+
+/* Показ только на десктопе */
+@media (max-width: 1023px) {
+    .desktop-only {
+        display: none !important;
+    }
+}
+
+/* === МОБИЛЬНЫЕ УСТРОЙСТВА (до 768px) === */
+@media (max-width: 767px) {
+    
+    /* Общие стили */
+    body {
+        font-size: var(--font-lg);
+    }
+    
+    /* Уменьшенные отступы */
+    .spacing-responsive {
+        padding: var(--spacing-md);
+    }
+    
+    /* Заголовки */
+    .tabs-header {
+        padding: 0 var(--spacing-md);
+        gap: var(--spacing-xs);
+        flex-wrap: wrap;
+        min-height: 44px; /* iOS рекомендуемый минимум для тап-целей */
+    }
+    
+    /* Вкладки */
+    .tab {
+        padding: var(--spacing-md) var(--spacing-md);
+        font-size: var(--font-md);
+        min-height: 44px;
+    }
+    
+    .add-role-btn {
+        order: -1;
+        margin-left: 0;
+        margin-right: auto;
+        min-height: 44px;
+    }
+    
+    /* Палитра */
+    .blocks-palette {
+        width: 280px;
+    }
+    
+    /* Блоки/заметки */
+    .note {
+        min-width: 150px;
+        min-height: 80px;
+        padding: var(--spacing-md);
+    }
+    
+    .note-title {
+        font-size: var(--font-lg);
+    }
+    
+    .note-preview {
+        font-size: var(--font-md);
+    }
+    
+    /* Кнопки */
+    .add-note-btn {
+        width: var(--btn-height-xl);
+        height: var(--btn-height-xl);
+        font-size: var(--font-3xl);
+        bottom: var(--spacing-xl);
+        right: var(--spacing-xl);
+    }
+    
+    .info-btn {
+        width: 35px;
+        height: 35px;
+        font-size: var(--font-lg);
+        bottom: var(--spacing-xl);
+        left: var(--spacing-xl);
+    }
+    
+    /* Модальные окна */
+    .modal {
+        width: 95%;
+        max-height: 90vh;
+        margin: var(--spacing-md);
+    }
+    
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: var(--spacing-lg) var(--spacing-xl);
+    }
+    
+    .modal-title-input {
+        font-size: var(--font-3xl);
+    }
+    
+    .modal-content-textarea {
+        font-size: var(--font-lg);
+        min-height: 200px;
+    }
+    
+    .role-modal {
+        width: 95%;
+        max-width: 350px;
+    }
+    
+    .delete-confirm-modal {
+        width: 95%;
+        max-width: 400px;
+    }
+    
+    /* Уведомления */
+    .instructions {
+        font-size: var(--font-base);
+        padding: var(--spacing-md) var(--spacing-lg);
+        max-width: 90%;
+        left: 5%;
+        bottom: 60px;
+        transform-origin: bottom center;
+    }
+    
+    .notification {
+        right: var(--spacing-md);
+        top: var(--spacing-md);
+        max-width: calc(100% - var(--spacing-2xl));
+        font-size: var(--font-md);
+    }
+    
+    /* Холст */
+    .canvas-container {
+        background-size: 15px 15px;
+    }
+    
+    /* Действия с заметками - увеличиваем для лучшего касания */
+    .note-action-btn,
+    .drag-handle {
+        width: 32px;
+        height: 32px;
+        font-size: var(--font-lg);
+    }
+}
+
+/* === ПЛАНШЕТЫ (768px - 1024px) === */
+@media (min-width: 768px) and (max-width: 1023px) {
+    
+    /* Палитра */
+    .blocks-palette {
+        width: 300px;
+    }
+    
+    /* Заметки */
+    .note {
+        min-width: 180px;
+    }
+    
+    /* Модальные окна */
+    .modal {
+        width: 85%;
+    }
+    
+    /* Кнопки */
+    .add-note-btn {
+        width: 55px;
+        height: 55px;
+    }
+}
+
+/* === БОЛЬШИЕ ЭКРАНЫ (1200px+) === */
+@media (min-width: 1200px) {
+    
+    /* Увеличенная палитра */
+    .blocks-palette {
+        width: 360px;
+    }
+    
+    /* Больше места для заметок */
+    .note {
+        max-width: 450px;
+    }
+    
+    /* Модальные окна */
+    .modal {
+        max-width: 700px;
+    }
+}
+
+/* === ВЫСОКИЕ ЭКРАНЫ === */
+@media (min-height: 800px) {
+    .modal {
+        max-height: 85vh;
+    }
+    
+    .palette-content {
+        /* Больше места для прокрутки */
+    }
+}
+
+/* === ЛАНДШАФТНАЯ ОРИЕНТАЦИЯ НА МОБИЛЬНЫХ === */
+@media (max-width: 767px) and (orientation: landscape) {
+    
+    /* Уменьшаем высоту заголовка */
+    .tabs-header {
+        min-height: 40px;
+        padding: var(--spacing-xs) var(--spacing-md);
+    }
+    
+    .tab {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: var(--font-md);
+    }
+    
+    /* Уменьшаем модальные окна */
+    .modal {
+        max-height: 95vh;
+    }
+    
+    .modal-content-textarea {
+        min-height: 150px;
+    }
+    
+    /* Инструкции */
+    .instructions {
+        font-size: var(--font-sm);
+        padding: var(--spacing-sm) var(--spacing-md);
+        bottom: var(--spacing-md);
+    }
+}
+
+/* === TOUCH УСТРОЙСТВА === */
+@media (hover: none) and (pointer: coarse) {
+    
+    /* Увеличиваем цели для касания */
+    .tab,
+    .note-action-btn,
+    .drag-handle,
+    .filter-tag,
+    .block-item {
+        min-height: 44px;
+    }
+    
+    /* Убираем hover эффекты */
+    .note-actions {
+        opacity: 1;
+    }
+    
+    .tab-remove {
+        display: flex;
+    }
+    
+    /* Увеличиваем область для перетаскивания связей */
+    .connection-delete-btn {
+        width: 32px;
+        height: 32px;
+        opacity: 1;
+    }
+}
+
+/* === РЕТИНА ДИСПЛЕИ === */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    
+    /* Более четкие границы */
+    .note,
+    .modal,
+    .blocks-palette {
+        border-width: 0.5px;
+    }
+    
+    /* Четкая сетка */
+    .canvas-container {
+        background-image: 
+            radial-gradient(circle, var(--color-grid-dots) 0.5px, transparent 0.5px);
+    }
+}
+
+/* === ДОСТУПНОСТЬ === */
+
+/* Пользователи с ограниченной подвижностью */
+@media (pointer: coarse) {
+    .note-action-btn,
+    .drag-handle,
+    .connection-delete-btn {
+        min-width: 48px;
+        min-height: 48px;
+    }
+}
+
+/* Уменьшенные анимации */
+@media (prefers-reduced-motion: reduce) {
+    .blocks-palette,
+    .modal,
+    .notification {
+        transition: none;
+    }
+    
+    .canvas-container {
+        scroll-behavior: auto;
+    }
+}
+
+/* Высокий контраст */
+@media (prefers-contrast: high) {
+    :root {
+        --border-light: #000;
+        --border-medium: #000;
+        --shadow-sm: 0 2px 8px rgba(0,0,0,0.5);
+        --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+    }
+    
+    .note {
+        border-width: 2px;
+        border-color: var(--border-light);
+    }
+}
+
+/* === ПЕЧАТЬ === */
+@media print {
+    
+    /* Скрываем интерактивные элементы */
+    .tabs-container,
+    .blocks-palette,
+    .add-note-btn,
+    .info-btn,
+    .note-actions,
+    .instructions {
+        display: none !important;
+    }
+    
+    /* Настройки для печати */
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .note {
+        background: white !important;
+        border: 1px solid black !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+        position: relative !important;
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .canvas-container {
+        background: none !important;
+    }
+    
+    /* Показываем URL в ссылках */
+    .note.reference::after {
+        content: " (Ссылка)";
+        font-size: var(--font-sm);
+        color: #666;
+    }
+}
