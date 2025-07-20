@@ -7,7 +7,6 @@ export class TabsModule {
         this.events = events;
         this.tabsContainer = null;
         this.roleModal = null;
-        this.tabIndicator = null;
         
         this.init();
     }
@@ -46,22 +45,8 @@ export class TabsModule {
             </div>
         `;
         
-        // Создать индикатор состояния
-        this.tabIndicator = document.createElement('div');
-        this.tabIndicator.className = 'tab-indicator';
-        this.tabIndicator.id = 'tabIndicator';
-        this.tabIndicator.textContent = 'Основное дерево - Редактирование';
-        
         // Вставить в начало body
         document.body.insertBefore(this.tabsContainer, document.body.firstChild);
-        
-        // Добавить индикатор в canvas area
-        setTimeout(() => {
-            const canvasArea = document.querySelector('.canvas-area');
-            if (canvasArea) {
-                canvasArea.appendChild(this.tabIndicator);
-            }
-        }, 100);
     }
 
     /**
@@ -327,9 +312,6 @@ export class TabsModule {
             activeTab.classList.add('active');
         }
 
-        // Обновить индикатор
-        this.updateTabIndicator(newTab);
-
         // Уведомить о смене контекста
         const isMainTree = newTab === 'main';
         this.events.emit('tab:context-changed', {
@@ -338,25 +320,6 @@ export class TabsModule {
             canCreateBlocks: isMainTree,
             canCreateReferences: !isMainTree
         });
-    }
-
-    /**
-     * Обновить индикатор состояния вкладки
-     * @param {string} tabId - ID активной вкладки
-     */
-    updateTabIndicator(tabId) {
-        if (!this.tabIndicator) return;
-
-        let indicatorText;
-        
-        if (tabId === 'main') {
-            indicatorText = 'Основное дерево - Редактирование';
-        } else {
-            const role = this.state.get(`roles.${tabId}`);
-            indicatorText = role ? `Роль: ${role.name} - Компоновка` : 'Неизвестная роль';
-        }
-        
-        this.tabIndicator.textContent = indicatorText;
     }
 
     /**
@@ -529,9 +492,6 @@ export class TabsModule {
         }
         if (this.roleModal) {
             this.roleModal.remove();
-        }
-        if (this.tabIndicator) {
-            this.tabIndicator.remove();
         }
         
         console.log('🗑️ Tabs module destroyed');
