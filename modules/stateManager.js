@@ -23,13 +23,12 @@ export class StateManager {
             // Основное дерево блоков
             blocks: [],
             
-            // Роли с ссылками на блоки
+            // Роли с ссылками на блоки (убран флаг isDefault)
             roles: {
                 manager: {
                     id: 'manager',
                     name: 'Руководитель',
                     icon: '👔',
-                    isDefault: true,
                     references: [],
                     createdAt: Date.now()
                 },
@@ -37,7 +36,6 @@ export class StateManager {
                     id: 'employee', 
                     name: 'Сотрудник',
                     icon: '👤',
-                    isDefault: true,
                     references: [],
                     createdAt: Date.now()
                 },
@@ -45,7 +43,6 @@ export class StateManager {
                     id: 'intern',
                     name: 'Стажер', 
                     icon: '🎓',
-                    isDefault: true,
                     references: [],
                     createdAt: Date.now()
                 }
@@ -398,7 +395,6 @@ export class StateManager {
             id: roleId,
             name: roleData.name,
             icon: roleData.icon || '👤',
-            isDefault: false,
             references: [],
             createdAt: Date.now()
         };
@@ -410,14 +406,14 @@ export class StateManager {
     }
 
     /**
-     * Удалить роль (только пользовательские)
+     * Удалить роль (теперь любую роль можно удалить)
      * @param {string} roleId - ID роли
      * @returns {StateManager}
      */
     deleteRole(roleId) {
         const role = this.get(`roles.${roleId}`);
-        if (!role || role.isDefault) {
-            console.warn(`Cannot delete role: ${roleId}`);
+        if (!role) {
+            console.warn(`Role not found: ${roleId}`);
             return this;
         }
         
@@ -482,8 +478,6 @@ export class StateManager {
             },
             roles: {
                 total: Object.keys(roles).length,
-                default: Object.values(roles).filter(r => r.isDefault).length,
-                custom: Object.values(roles).filter(r => !r.isDefault).length,
                 totalReferences
             },
             connections: {

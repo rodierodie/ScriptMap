@@ -154,7 +154,7 @@ export class MigrationModule {
     }
 
     /**
-     * Получить роли по умолчанию
+     * Получить роли по умолчанию (убран флаг isDefault)
      * @returns {Object} - Объект с ролями
      */
     getDefaultRoles() {
@@ -163,7 +163,6 @@ export class MigrationModule {
                 id: 'manager',
                 name: 'Руководитель',
                 icon: '👔',
-                isDefault: true,
                 references: [],
                 createdAt: Date.now()
             },
@@ -171,7 +170,6 @@ export class MigrationModule {
                 id: 'employee', 
                 name: 'Сотрудник',
                 icon: '👤',
-                isDefault: true,
                 references: [],
                 createdAt: Date.now()
             },
@@ -179,7 +177,6 @@ export class MigrationModule {
                 id: 'intern',
                 name: 'Стажер', 
                 icon: '🎓',
-                isDefault: true,
                 references: [],
                 createdAt: Date.now()
             }

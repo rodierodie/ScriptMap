@@ -1,5 +1,6 @@
 /**
  * Tabs Module - Управление системой вкладок и ролей
+ * v2.0 - Поддержка удаления всех ролей с подтверждением
  */
 export class TabsModule {
     constructor(state, events) {
@@ -7,6 +8,7 @@ export class TabsModule {
         this.events = events;
         this.tabsContainer = null;
         this.roleModal = null;
+        this.deleteConfirmModal = null;
         
         this.init();
     }
@@ -17,6 +19,7 @@ export class TabsModule {
     init() {
         this.createTabsContainer();
         this.createRoleModal();
+        this.createDeleteConfirmModal();
         this.setupEventListeners();
         this.setupStateWatchers();
         this.renderTabs();
@@ -93,6 +96,52 @@ export class TabsModule {
     }
 
     /**
+     * Создать модальное окно подтверждения удаления
+     */
+    createDeleteConfirmModal() {
+        this.deleteConfirmModal = document.createElement('div');
+        this.deleteConfirmModal.className = 'delete-confirm-overlay';
+        this.deleteConfirmModal.id = 'deleteConfirmModal';
+        
+        this.deleteConfirmModal.innerHTML = `
+            <div class="delete-confirm-modal">
+                <div class="delete-confirm-header">
+                    <div class="delete-confirm-icon">⚠️</div>
+                    <h2 class="delete-confirm-title">Удалить роль?</h2>
+                </div>
+                <div class="delete-confirm-body">
+                    <p class="delete-confirm-message">
+                        Вы действительно хотите удалить роль "<strong id="deleteRoleName">Роль</strong>"?
+                    </p>
+                    <div class="delete-confirm-details" id="deleteConfirmDetails">
+                        <div class="delete-detail">
+                            <span class="delete-detail-label">Ссылки в роли:</span>
+                            <span class="delete-detail-value" id="deleteReferencesCount">0</span>
+                        </div>
+                        <div class="delete-detail">
+                            <span class="delete-detail-label">Создана:</span>
+                            <span class="delete-detail-value" id="deleteCreatedDate">-</span>
+                        </div>
+                    </div>
+                    <div class="delete-confirm-warning">
+                        <p>⚠️ <strong>Внимание:</strong> Это действие нельзя отменить. Все ссылки в роли будут удалены, но сами блоки останутся в основном дереве.</p>
+                    </div>
+                </div>
+                <div class="delete-confirm-footer">
+                    <button class="delete-confirm-btn delete-confirm-btn-secondary" id="cancelDeleteBtn">
+                        Отмена
+                    </button>
+                    <button class="delete-confirm-btn delete-confirm-btn-danger" id="confirmDeleteBtn">
+                        Удалить роль
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(this.deleteConfirmModal);
+    }
+
+    /**
      * Настройка слушателей событий
      */
     setupEventListeners() {
@@ -100,8 +149,11 @@ export class TabsModule {
         const addRoleBtn = document.getElementById('addRoleBtn');
         addRoleBtn.addEventListener('click', () => this.openRoleModal());
 
-        // События модального окна
-        this.setupModalEvents();
+        // События модального окна создания роли
+        this.setupRoleModalEvents();
+        
+        // События модального окна подтверждения удаления
+        this.setupDeleteConfirmModalEvents();
         
         // Клики по вкладкам (делегирование)
         this.tabsContainer.addEventListener('click', (e) => {
@@ -124,9 +176,9 @@ export class TabsModule {
     }
 
     /**
-     * Настройка событий модального окна
+     * Настройка событий модального окна создания роли
      */
-    setupModalEvents() {
+    setupRoleModalEvents() {
         const roleNameInput = document.getElementById('roleNameInput');
         const cancelRoleBtn = document.getElementById('cancelRoleBtn');
         const saveRoleBtn = document.getElementById('saveRoleBtn');
@@ -173,6 +225,32 @@ export class TabsModule {
     }
 
     /**
+     * Настройка событий модального окна подтверждения удаления
+     */
+    setupDeleteConfirmModalEvents() {
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+        // Кнопки
+        cancelDeleteBtn.addEventListener('click', () => this.closeDeleteConfirmModal());
+        confirmDeleteBtn.addEventListener('click', () => this.confirmRoleDeletion());
+
+        // Закрытие по оверлею
+        this.deleteConfirmModal.addEventListener('click', (e) => {
+            if (e.target === this.deleteConfirmModal) {
+                this.closeDeleteConfirmModal();
+            }
+        });
+
+        // Escape для отмены
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.deleteConfirmModal.classList.contains('visible')) {
+                this.closeDeleteConfirmModal();
+            }
+        });
+    }
+
+    /**
      * Настройка отслеживания изменений состояния
      */
     setupStateWatchers() {
@@ -196,9 +274,11 @@ export class TabsModule {
      */
     handleKeydown(e) {
         // Не обрабатывать если открыто модальное окно
-        if (document.getElementById('roleModal').classList.contains('visible')) {
+        if (document.getElementById('roleModal').classList.contains('visible') ||
+            document.getElementById('deleteConfirmModal').classList.contains('visible')) {
             if (e.key === 'Escape') {
                 this.closeRoleModal();
+                this.closeDeleteConfirmModal();
             }
             return;
         }
@@ -250,32 +330,97 @@ export class TabsModule {
     }
 
     /**
-     * Создать вкладку роли
+     * Создать вкладку роли (теперь все роли имеют кнопку удаления)
      * @param {Object} role - Данные роли
      * @param {HTMLElement} insertBefore - Элемент, перед которым вставить
      */
     createRoleTab(role, insertBefore) {
         const tab = document.createElement('div');
-        tab.className = `tab ${role.isDefault ? '' : 'custom'}`;
+        tab.className = 'tab';
         tab.setAttribute('data-tab', role.id);
         
         tab.innerHTML = `
             <span class="tab-icon">${role.icon}</span>
             <span>${role.name}</span>
             <span class="tab-count">0</span>
-            ${!role.isDefault ? '<button class="tab-remove" title="Удалить роль">×</button>' : ''}
+            <button class="tab-remove" title="Удалить роль">×</button>
         `;
 
-        // Обработчик удаления пользовательских ролей
-        if (!role.isDefault) {
-            const removeBtn = tab.querySelector('.tab-remove');
-            removeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.deleteRole(role.id, role.name);
-            });
-        }
+        // Обработчик удаления - теперь для всех ролей
+        const removeBtn = tab.querySelector('.tab-remove');
+        removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.openDeleteConfirmModal(role.id, role.name);
+        });
 
         insertBefore.parentNode.insertBefore(tab, insertBefore);
+    }
+
+    /**
+     * Открыть модальное окно подтверждения удаления
+     * @param {string} roleId - ID роли
+     * @param {string} roleName - Название роли
+     */
+    openDeleteConfirmModal(roleId, roleName) {
+        this.pendingDeleteRoleId = roleId;
+        
+        const role = this.state.get(`roles.${roleId}`);
+        if (!role) return;
+
+        // Заполнить данные роли
+        document.getElementById('deleteRoleName').textContent = roleName;
+        document.getElementById('deleteReferencesCount').textContent = role.references?.length || 0;
+        
+        const createdDate = new Date(role.createdAt).toLocaleString('ru-RU', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        document.getElementById('deleteCreatedDate').textContent = createdDate;
+
+        this.deleteConfirmModal.classList.add('visible');
+        
+        // Фокус на кнопку отмены для безопасности
+        setTimeout(() => {
+            document.getElementById('cancelDeleteBtn').focus();
+        }, 100);
+
+        this.events.emit('delete-confirm-modal:opened', { roleId, roleName });
+    }
+
+    /**
+     * Закрыть модальное окно подтверждения удаления
+     */
+    closeDeleteConfirmModal() {
+        this.deleteConfirmModal.classList.remove('visible');
+        this.pendingDeleteRoleId = null;
+        this.events.emit('delete-confirm-modal:closed');
+    }
+
+    /**
+     * Подтвердить удаление роли
+     */
+    confirmRoleDeletion() {
+        if (!this.pendingDeleteRoleId) return;
+
+        const roleId = this.pendingDeleteRoleId;
+        const role = this.state.get(`roles.${roleId}`);
+        
+        // Удалить роль через state manager
+        this.state.deleteRole(roleId);
+        
+        this.closeDeleteConfirmModal();
+        
+        // Показать уведомление об успешном удалении
+        this.events.emit('ui:show-notification', {
+            message: `Роль "${role.name}" удалена`,
+            type: 'info',
+            duration: 2000
+        });
+
+        this.events.emit('role:deleted-via-ui', { roleId, role });
     }
 
     /**
@@ -405,28 +550,12 @@ export class TabsModule {
     }
 
     /**
-     * Удалить роль
-     * @param {string} roleId - ID роли
-     * @param {string} roleName - Название роли
-     */
-    deleteRole(roleId, roleName) {
-        if (!confirm(`Удалить роль "${roleName}"?`)) {
-            return;
-        }
-
-        // Удалить роль через state manager
-        this.state.deleteRole(roleId);
-
-        this.events.emit('role:deleted-via-ui', { roleId, roleName });
-    }
-
-    /**
      * Получить список ID ролей (для горячих клавиш)
      * @returns {Array} - Массив ID ролей
      */
     getRoleIds() {
         const roles = this.state.get('roles');
-        return Object.keys(roles).filter(id => roles[id].isDefault);
+        return Object.keys(roles);
     }
 
     /**
@@ -468,7 +597,6 @@ export class TabsModule {
     getStats() {
         const roles = this.state.get('roles');
         const totalRoles = Object.keys(roles).length;
-        const customRoles = Object.values(roles).filter(r => !r.isDefault).length;
         const totalReferences = Object.values(roles).reduce(
             (sum, role) => sum + (role.references?.length || 0), 0
         );
@@ -476,10 +604,9 @@ export class TabsModule {
         return {
             totalTabs: totalRoles + 1, // +1 для основного дерева
             totalRoles,
-            defaultRoles: totalRoles - customRoles,
-            customRoles,
             totalReferences,
-            activeTab: this.state.get('ui.activeTab')
+            activeTab: this.state.get('ui.activeTab'),
+            allRolesDeletable: true // Новое свойство
         };
     }
 
@@ -492,6 +619,9 @@ export class TabsModule {
         }
         if (this.roleModal) {
             this.roleModal.remove();
+        }
+        if (this.deleteConfirmModal) {
+            this.deleteConfirmModal.remove();
         }
         
         console.log('🗑️ Tabs module destroyed');

@@ -116,19 +116,13 @@ export class CanvasModule {
     }
 
     /**
-     * Обновить стили холста
+     * Обновить стили холста (унифицированный фон)
      * @param {Object} context - Контекст вкладки
      */
     updateCanvasStyles(context) {
-        if (context.isMainTree) {
-            // В основном дереве - обычная сетка
-            this.container.style.backgroundImage = 
-                'radial-gradient(circle, #ddd 1px, transparent 1px)';
-        } else {
-            // В ролях - другой цвет сетки для визуального различия
-            this.container.style.backgroundImage = 
-                'radial-gradient(circle, #34a853 1px, transparent 1px)';
-        }
+        // Унифицированный фон для всех вкладок - серые точки
+        this.container.style.backgroundImage = 
+            'radial-gradient(circle, #ddd 1px, transparent 1px)';
     }
 
     /**
@@ -136,7 +130,7 @@ export class CanvasModule {
      * @param {Object} context - Контекст вкладки
      */
     updateBackgroundGrid(context) {
-        // Можно добавить разные размеры сетки или цвета для разных контекстов
+        // Можно добавить разные размеры сетки для разных контекстов
         const gridSize = context.isMainTree ? '20px' : '25px';
         this.container.style.backgroundSize = `${gridSize} ${gridSize}`;
     }
