@@ -60,7 +60,7 @@ class NotesApp {
             
             console.log('✅ Notes App v2.0 initialized successfully');
             console.log('📦 Available modules:', Object.keys(this.modules));
-            console.log('🎯 New features: Tabs, Roles, Blocks Palette');
+            console.log('🎯 New features: Tabs, Roles, Blocks Palette, Project Load/Save');
             console.log('🔗 Try: Ctrl+C for connections, Ctrl+T for new roles');
             
         } catch (error) {
@@ -307,9 +307,6 @@ class NotesApp {
                 console.log('🆕 Created initial v2.0 state');
             }
             
-            // Инициализировать тему
-            this.modules.ui?.initializeTheme();
-            
         } catch (error) {
             console.warn('⚠️ Could not restore state:', error);
             
@@ -367,6 +364,11 @@ class NotesApp {
 🔗 СВЯЗИ МЕЖДУ БЛОКАМИ:
 • Ctrl+C - создать связь между блоками
 • Наведите на линию для удаления
+
+💾 СОХРАНЕНИЕ И ЗАГРУЗКА ПРОЕКТОВ:
+• Кнопки "Сохранить" и "Загрузить" в заголовке
+• Полный экспорт/импорт всех данных
+• Совместимость между версиями
 
 ⌨️ ГОРЯЧИЕ КЛАВИШИ:
 • Ctrl+1 - Основное дерево
