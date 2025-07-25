@@ -6,6 +6,7 @@
  * - Создание блоков только в основном дереве
  * - Создание ссылок в ролях
  * - Синхронизация изменений блоков во всех ссылках
+ * FIXED: Исправлены глобальные функции модального окна
  */
 export class NotesModule {
     constructor(state, events) {
@@ -669,10 +670,10 @@ export class NotesModule {
                               placeholder="Содержимое блока...">${this.escapeHtml(block.content)}</textarea>
                 </div>
                 <div class="modal-footer">
-                    <button class="modal-btn modal-btn-secondary" onclick="closeNoteModal()">
+                    <button class="modal-btn modal-btn-secondary" id="modalCancelBtn">
                         Отмена
                     </button>
-                    <button class="modal-btn modal-btn-primary" onclick="saveNoteModal('${block.id}')">
+                    <button class="modal-btn modal-btn-primary" id="modalSaveBtn">
                         Сохранить
                     </button>
                 </div>
@@ -704,6 +705,10 @@ export class NotesModule {
         const tagsInput = modalOverlay.querySelector('#tagsInput');
         const tagsDisplay = modalOverlay.querySelector('#tagsDisplay');
         const tagsPreview = modalOverlay.querySelector('#tagsPreview');
+        const modalCancelBtn = modalOverlay.querySelector('#modalCancelBtn');
+        const modalSaveBtn = modalOverlay.querySelector('#modalSaveBtn');
+        const titleInput = modalOverlay.querySelector('.modal-title-input');
+        const contentTextarea = modalOverlay.querySelector('.modal-content-textarea');
         
         let isEditingTags = false;
 
@@ -744,6 +749,34 @@ export class NotesModule {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 tagsInput.blur();
+            }
+        });
+
+        // Кнопка отмены
+        modalCancelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.closeNoteModal();
+        });
+
+        // Кнопка сохранения
+        modalSaveBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const title = titleInput.value;
+            const content = contentTextarea.value;
+            const tagsString = tagsInput.value;
+            this.saveNoteFromModal(blockId, title, content, tagsString);
+            this.closeNoteModal();
+        });
+
+        // Обработка Enter для сохранения (Ctrl+Enter)
+        modalOverlay.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                const title = titleInput.value;
+                const content = contentTextarea.value;
+                const tagsString = tagsInput.value;
+                this.saveNoteFromModal(blockId, title, content, tagsString);
+                this.closeNoteModal();
             }
         });
 
