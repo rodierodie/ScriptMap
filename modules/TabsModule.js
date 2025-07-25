@@ -2,6 +2,7 @@
  * Tabs Module - Управление системой вкладок и ролей
  * v2.0 - Поддержка удаления всех ролей с подтверждением
  * v2.1 - Полная система сохранения и загрузки проектов
+ * FIXED: Принудительный перерендер после загрузки проекта
  */
 export class TabsModule {
     constructor(state, events) {
@@ -254,573 +255,8 @@ export class TabsModule {
     }
 
     /**
-     * Сохранить проект
-     */
-    async saveProject() {
-        // Показать индикатор загрузки
-        const saveBtn = document.getElementById('saveProjectBtn');
-        const originalContent = saveBtn.innerHTML;
-        
-        try {
-            // Визуальная обратная связь
-            saveBtn.innerHTML = '<span class="btn-icon">⏳</span><span class="btn-text">Сохранение...</span>';
-            saveBtn.disabled = true;
-            
-            console.log('💾 Starting project save...');
-            
-            // Получить текущее состояние приложения
-            const currentState = this.state.getState();
-            
-            // Создать проектные метаданные
-            const projectMeta = this.generateProjectMeta(currentState);
-            
-            // Подготовить данные проекта с метаданными
-            const projectData = {
-                version: "2.0",
-                projectMeta: projectMeta,
-                data: currentState
-            };
-            
-            // Сериализовать данные
-            const dataStr = JSON.stringify(projectData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            
-            // Сгенерировать имя файла в формате notes-project-YYYY-MM-DD-HHmm.json
-            const fileName = this.generateProjectFileName();
-            
-            // Создать и выполнить скачивание
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = fileName;
-            link.style.display = 'none';
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            // Небольшая задержка для обеспечения начала скачивания
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            // Освободить память
-            URL.revokeObjectURL(link.href);
-            
-            // Показать уведомление об успехе
-            this.events.emit('ui:show-notification', {
-                message: `Проект сохранен как ${fileName}`,
-                type: 'success',
-                duration: 3000
-            });
-            
-            console.log('✅ Project saved successfully:', fileName);
-            
-            // Эмитировать событие для статистики
-            this.events.emit('project:saved', {
-                fileName,
-                projectMeta,
-                size: dataStr.length
-            });
-            
-        } catch (error) {
-            console.error('❌ Project save failed:', error);
-            
-            this.events.emit('ui:show-notification', {
-                message: 'Ошибка сохранения проекта',
-                type: 'error',
-                duration: 3000
-            });
-        } finally {
-            // Восстановить кнопку
-            setTimeout(() => {
-                saveBtn.innerHTML = originalContent;
-                saveBtn.disabled = false;
-            }, 500);
-        }
-    }
-
-    /**
-     * Загрузить проект
-     */
-    loadProject() {
-        // Создать скрытый input для выбора файла
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = '.json';
-        fileInput.style.display = 'none';
-        
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            console.log('📁 Loading project file:', file.name);
-            this.handleProjectFile(file);
-        });
-        
-        // Добавить в DOM и кликнуть
-        document.body.appendChild(fileInput);
-        fileInput.click();
-        document.body.removeChild(fileInput);
-    }
-
-    /**
-     * Обработать выбранный файл проекта
-     * @param {File} file - Выбранный файл
-     */
-    async handleProjectFile(file) {
-        const loadBtn = document.getElementById('loadProjectBtn');
-        const originalContent = loadBtn.innerHTML;
-        
-        try {
-            // Показать индикатор загрузки
-            loadBtn.innerHTML = '<span class="btn-icon">⏳</span><span class="btn-text">Чтение...</span>';
-            loadBtn.disabled = true;
-            
-            // Прочитать файл
-            const fileText = await this.readFileAsText(file);
-            
-            // Парсить JSON
-            let projectData;
-            try {
-                projectData = JSON.parse(fileText);
-            } catch (parseError) {
-                throw new Error('Файл не является валидным JSON');
-            }
-            
-            // Валидировать структуру проекта
-            const validationResult = this.validateProjectFile(projectData);
-            if (!validationResult.isValid) {
-                throw new Error(validationResult.error);
-            }
-            
-            // Извлечь данные состояния из проекта
-            const stateData = this.extractProjectData(projectData);
-            
-            // Сохранить данные для загрузки и показать подтверждение
-            this.pendingProjectData = stateData;
-            this.showLoadConfirmation(projectData);
-            
-        } catch (error) {
-            console.error('❌ Project load failed:', error);
-            
-            this.events.emit('ui:show-notification', {
-                message: `Ошибка загрузки: ${error.message}`,
-                type: 'error',
-                duration: 4000
-            });
-        } finally {
-            // Восстановить кнопку
-            setTimeout(() => {
-                loadBtn.innerHTML = originalContent;
-                loadBtn.disabled = false;
-            }, 500);
-        }
-    }
-
-    /**
-     * Прочитать файл как текст
-     * @param {File} file - Файл для чтения
-     * @returns {Promise<string>} - Содержимое файла
-     */
-    readFileAsText(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            
-            reader.onload = (e) => resolve(e.target.result);
-            reader.onerror = () => reject(new Error('Ошибка чтения файла'));
-            
-            reader.readAsText(file);
-        });
-    }
-
-    /**
-     * Валидировать файл проекта
-     * @param {Object} data - Данные из файла
-     * @returns {Object} - Результат валидации {isValid, error}
-     */
-    validateProjectFile(data) {
-        // Проверка базовой структуры
-        if (!data || typeof data !== 'object') {
-            return { isValid: false, error: 'Файл не содержит валидных данных' };
-        }
-        
-        // Проверка наличия обязательных полей
-        if (!data.version) {
-            return { isValid: false, error: 'Отсутствует информация о версии' };
-        }
-        
-        if (!data.data) {
-            return { isValid: false, error: 'Отсутствуют данные приложения' };
-        }
-        
-        // Проверка версии
-        const supportedVersions = ['1.0', '2.0'];
-        if (!supportedVersions.includes(data.version)) {
-            return { isValid: false, error: `Неподдерживаемая версия: ${data.version}` };
-        }
-        
-        // Проверка структуры данных
-        const stateData = data.data;
-        if (!stateData || typeof stateData !== 'object') {
-            return { isValid: false, error: 'Некорректная структура данных' };
-        }
-        
-        // Проверка обязательных полей состояния
-        if (!Array.isArray(stateData.blocks)) {
-            return { isValid: false, error: 'Отсутствует массив блоков' };
-        }
-        
-        if (!stateData.roles || typeof stateData.roles !== 'object') {
-            return { isValid: false, error: 'Отсутствует объект ролей' };
-        }
-        
-        if (!Array.isArray(stateData.connections)) {
-            return { isValid: false, error: 'Отсутствует массив связей' };
-        }
-        
-        console.log('✅ Project file validation passed');
-        return { isValid: true };
-    }
-
-    /**
-     * Извлечь данные состояния из проектного файла
-     * @param {Object} projectData - Данные проекта
-     * @returns {Object} - Данные состояния приложения
-     */
-    extractProjectData(projectData) {
-        // Для проектов v2.0 данные находятся в поле data
-        const stateData = projectData.data;
-        
-        // Убедиться что все необходимые поля присутствуют
-        const extractedData = {
-            version: stateData.version || "2.0",
-            blocks: stateData.blocks || [],
-            roles: stateData.roles || {},
-            connections: stateData.connections || [],
-            ui: {
-                activeTab: 'main',
-                theme: stateData.ui?.theme || 'light',
-                paletteOpen: false,
-                instructionsVisible: false
-            },
-            canvas: stateData.canvas || {
-                transform: { x: 0, y: 0 },
-                isDragging: false,
-                isPanning: false,
-                zoom: 1
-            },
-            interaction: stateData.interaction || {
-                isSpacePressed: false,
-                dragItem: null,
-                dragOffset: { x: 0, y: 0 },
-                panStart: { x: 0, y: 0 }
-            },
-            settings: stateData.settings || {
-                autoSave: true,
-                debugMode: false,
-                version: "2.0"
-            }
-        };
-        
-        console.log('📊 Extracted project data:', {
-            blocks: extractedData.blocks.length,
-            roles: Object.keys(extractedData.roles).length,
-            connections: extractedData.connections.length
-        });
-        
-        return extractedData;
-    }
-
-    /**
-     * Показать подтверждение загрузки проекта
-     * @param {Object} projectData - Данные проекта с метаданными
-     */
-    showLoadConfirmation(projectData) {
-        const projectMeta = projectData.projectMeta || {};
-        const data = projectData.data || {};
-        
-        // Заполнить данные проекта в модальном окне
-        document.getElementById('loadProjectName').textContent = projectMeta.name || 'Неизвестный проект';
-        document.getElementById('loadBlocksCount').textContent = projectMeta.blocksCount || data.blocks?.length || 0;
-        document.getElementById('loadRolesCount').textContent = projectMeta.rolesCount || Object.keys(data.roles || {}).length;
-        document.getElementById('loadConnectionsCount').textContent = projectMeta.connectionsCount || data.connections?.length || 0;
-        
-        // Форматировать дату создания
-        let createdDate = '-';
-        if (projectMeta.createdAt) {
-            try {
-                const date = new Date(projectMeta.createdAt);
-                createdDate = date.toLocaleString('ru-RU', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            } catch (e) {
-                createdDate = projectMeta.createdAt;
-            }
-        }
-        document.getElementById('loadCreatedDate').textContent = createdDate;
-        
-        // Показать модальное окно
-        this.loadConfirmModal.classList.add('visible');
-        
-        // Фокус на кнопку отмены для безопасности
-        setTimeout(() => {
-            document.getElementById('cancelLoadBtn').focus();
-        }, 100);
-        
-        this.events.emit('load-confirm-modal:opened', { projectMeta });
-    }
-
-    /**
-     * Подтвердить загрузку проекта
-     */
-    confirmProjectLoad() {
-        if (!this.pendingProjectData) return;
-        
-        // Сохранить данные для статистики до очистки
-        const projectStats = {
-            blocks: this.pendingProjectData.blocks?.length || 0,
-            roles: Object.keys(this.pendingProjectData.roles || {}).length,
-            connections: this.pendingProjectData.connections?.length || 0
-        };
-        
-        try {
-            console.log('🔄 Loading project data into application...');
-            
-            // Использовать MigrationModule для автоматической миграции
-            if (window.app && window.app.modules.migration) {
-                const migratedData = window.app.modules.migration.autoMigrate(this.pendingProjectData);
-                this.state.setState(migratedData);
-            } else {
-                // Fallback: прямая загрузка
-                this.state.setState(this.pendingProjectData);
-            }
-            
-            // Закрыть модальное окно
-            this.closeLoadConfirmModal();
-            
-            // Переключиться на основное дерево
-            this.state.set('ui.activeTab', 'main');
-            
-            // Показать уведомление об успехе
-            this.events.emit('ui:show-notification', {
-                message: 'Проект успешно загружен',
-                type: 'success',
-                duration: 3000
-            });
-            
-            // Эмитировать событие для статистики (используем сохраненные данные)
-            this.events.emit('project:loaded', projectStats);
-            
-            console.log('✅ Project loaded successfully');
-            
-        } catch (error) {
-            console.error('❌ Project load application failed:', error);
-            
-            this.events.emit('ui:show-notification', {
-                message: 'Ошибка применения проекта',
-                type: 'error',
-                duration: 3000
-            });
-        } finally {
-            // Очистить временные данные
-            this.pendingProjectData = null;
-        }
-    }
-
-    /**
-     * Настройка событий модального окна подтверждения загрузки
-     */
-    setupLoadConfirmModalEvents() {
-        const cancelLoadBtn = document.getElementById('cancelLoadBtn');
-        const confirmLoadBtn = document.getElementById('confirmLoadBtn');
-
-        // Кнопки
-        cancelLoadBtn.addEventListener('click', () => this.closeLoadConfirmModal());
-        confirmLoadBtn.addEventListener('click', () => this.confirmProjectLoad());
-
-        // Закрытие по оверлею
-        this.loadConfirmModal.addEventListener('click', (e) => {
-            if (e.target === this.loadConfirmModal) {
-                this.closeLoadConfirmModal();
-            }
-        });
-
-        // Escape для отмены
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.loadConfirmModal.classList.contains('visible')) {
-                this.closeLoadConfirmModal();
-            }
-        });
-    }
-
-    /**
-     * Закрыть модальное окно подтверждения загрузки
-     */
-    closeLoadConfirmModal() {
-        this.loadConfirmModal.classList.remove('visible');
-        this.pendingProjectData = null;
-        this.events.emit('load-confirm-modal:closed');
-    }
-
-    /**
-     * Генерировать метаданные проекта
-     * @param {Object} state - Текущее состояние приложения
-     * @returns {Object} - Метаданные проекта
-     */
-    generateProjectMeta(state) {
-        const blocks = state.blocks || [];
-        const roles = state.roles || {};
-        const connections = state.connections || [];
-        
-        // Подсчитать общее количество ссылок во всех ролях
-        const totalReferences = Object.values(roles).reduce(
-            (sum, role) => sum + (role.references?.length || 0), 0
-        );
-        
-        // Найти самый старый блок для определения даты создания проекта
-        const oldestBlock = blocks.reduce((oldest, block) => {
-            return (!oldest || block.createdAt < oldest.createdAt) ? block : oldest;
-        }, null);
-        
-        const createdAt = oldestBlock?.createdAt || Date.now();
-        
-        return {
-            name: this.generateProjectName(state),
-            createdAt: new Date(createdAt).toISOString(),
-            exportedAt: new Date().toISOString(),
-            blocksCount: blocks.length,
-            rolesCount: Object.keys(roles).length,
-            connectionsCount: connections.length,
-            referencesCount: totalReferences,
-            version: "2.0"
-        };
-    }
-
-    /**
-     * Генерировать название проекта на основе содержимого
-     * @param {Object} state - Текущее состояние приложения
-     * @returns {string} - Название проекта
-     */
-    generateProjectName(state) {
-        const blocks = state.blocks || [];
-        
-        // Если нет блоков
-        if (blocks.length === 0) {
-            return "Пустой проект";
-        }
-        
-        // Попытаться найти блок с подходящим названием для проекта
-        const titleCandidates = blocks
-            .filter(block => block.title && block.title.trim().length > 0)
-            .map(block => block.title.trim());
-            
-        if (titleCandidates.length > 0) {
-            // Взять первый подходящий заголовок (обычно это главный блок)
-            const projectName = titleCandidates[0];
-            
-            // Ограничить длину и очистить от недопустимых символов
-            return projectName.substring(0, 30).replace(/[<>:"/\\|?*]/g, '');
-        }
-        
-        // Если нет подходящих заголовков
-        return `Проект (${blocks.length} блоков)`;
-    }
-
-    /**
-     * Генерировать имя файла проекта
-     * @returns {string} - Имя файла в формате notes-project-YYYY-MM-DD-HHmm.json
-     */
-    generateProjectFileName() {
-        const now = new Date();
-        
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        
-        return `notes-project-${year}-${month}-${day}-${hours}${minutes}.json`;
-    }
-
-    /**
-     * Настройка событий модального окна создания роли
-     */
-    setupRoleModalEvents() {
-        const roleNameInput = document.getElementById('roleNameInput');
-        const cancelRoleBtn = document.getElementById('cancelRoleBtn');
-        const saveRoleBtn = document.getElementById('saveRoleBtn');
-
-        // Валидация ввода
-        roleNameInput.addEventListener('input', (e) => {
-            const value = e.target.value.trim();
-            saveRoleBtn.disabled = value.length === 0;
-        });
-
-        // Enter для сохранения
-        roleNameInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !saveRoleBtn.disabled) {
-                this.createRole(roleNameInput.value.trim());
-            }
-        });
-
-        // Кнопки
-        cancelRoleBtn.addEventListener('click', () => this.closeRoleModal());
-        saveRoleBtn.addEventListener('click', () => {
-            const roleName = roleNameInput.value.trim();
-            if (roleName) {
-                this.createRole(roleName);
-            }
-        });
-
-        // Закрытие по оверлею
-        this.roleModal.addEventListener('click', (e) => {
-            if (e.target === this.roleModal) {
-                this.closeRoleModal();
-            }
-        });
-
-        // Подсказки
-        document.querySelectorAll('.role-suggestion').forEach(suggestion => {
-            suggestion.addEventListener('click', () => {
-                const roleText = suggestion.dataset.role;
-                const roleName = roleText.substring(2).trim(); // Убрать эмодзи
-                roleNameInput.value = roleName;
-                saveRoleBtn.disabled = false;
-                roleNameInput.focus();
-            });
-        });
-    }
-
-    /**
-     * Настройка событий модального окна подтверждения удаления
-     */
-    setupDeleteConfirmModalEvents() {
-        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
-        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-
-        // Кнопки
-        cancelDeleteBtn.addEventListener('click', () => this.closeDeleteConfirmModal());
-        confirmDeleteBtn.addEventListener('click', () => this.confirmRoleDeletion());
-
-        // Закрытие по оверлею
-        this.deleteConfirmModal.addEventListener('click', (e) => {
-            if (e.target === this.deleteConfirmModal) {
-                this.closeDeleteConfirmModal();
-            }
-        });
-
-        // Escape для отмены
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.deleteConfirmModal.classList.contains('visible')) {
-                this.closeDeleteConfirmModal();
-            }
-        });
-    }
-
-    /**
      * Настройка отслеживания изменений состояния
+     * ИСПРАВЛЕНИЕ: Добавлены события для принудительного перерендера
      */
     setupStateWatchers() {
         // Отслеживание изменений ролей
@@ -835,49 +271,30 @@ export class TabsModule {
 
         // Отслеживание изменений блоков и ссылок для счетчиков
         this.state.watch('blocks', () => this.updateTabCounts());
+
+        // ИСПРАВЛЕНИЕ: Слушать событие загрузки проекта для принудительного перерендера
+        this.events.on('project:loaded', () => {
+            this.forceRerenderTabs();
+        });
+
+        // ИСПРАВЛЕНИЕ: Слушать полную замену состояния
+        this.events.on('state:replaced', () => {
+            this.forceRerenderTabs();
+        });
     }
 
     /**
-     * Обработка горячих клавиш
-     * @param {KeyboardEvent} e - Событие клавиатуры
+     * ИСПРАВЛЕНИЕ: Принудительный перерендер всех вкладок
+     * Используется после загрузки проекта или полной замены состояния
      */
-    handleKeydown(e) {
-        // Не обрабатывать если открыто модальное окно
-        if (document.getElementById('roleModal').classList.contains('visible') ||
-            document.getElementById('deleteConfirmModal').classList.contains('visible') ||
-            document.getElementById('loadConfirmModal').classList.contains('visible')) {
-            if (e.key === 'Escape') {
-                this.closeRoleModal();
-                this.closeDeleteConfirmModal();
-                this.closeLoadConfirmModal();
-            }
-            return;
-        }
-
-        // Горячие клавиши для вкладок
-        if (e.ctrlKey || e.metaKey) {
-            switch (e.key) {
-                case '1':
-                    e.preventDefault();
-                    this.switchToTab('main');
-                    break;
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                    e.preventDefault();
-                    const roleIndex = parseInt(e.key) - 2;
-                    const roleIds = this.getRoleIds();
-                    if (roleIds[roleIndex]) {
-                        this.switchToTab(roleIds[roleIndex]);
-                    }
-                    break;
-                case 't':
-                    e.preventDefault();
-                    this.openRoleModal();
-                    break;
-            }
-        }
+    forceRerenderTabs() {
+        console.log('🔄 Force re-rendering tabs after project load');
+        
+        // Небольшая задержка для завершения обновления состояния
+        setTimeout(() => {
+            this.renderTabs();
+            this.updateTabCounts();
+        }, 50);
     }
 
     /**
@@ -885,113 +302,49 @@ export class TabsModule {
      */
     renderTabs() {
         const tabsHeader = this.tabsContainer.querySelector('.tabs-header');
-        const addRoleBtn = document.getElementById('addRoleBtn');
+        const roles = this.state.get('roles');
         
-        // Удалить все роли (кроме основного дерева и кнопки добавления)
-        const roleTabs = tabsHeader.querySelectorAll('.tab:not(.main-tree)');
-        roleTabs.forEach(tab => tab.remove());
+        // Очистить существующие вкладки ролей
+        tabsHeader.querySelectorAll('.tab:not(.main-tree)').forEach(tab => tab.remove());
         
         // Добавить вкладки ролей
-        const roles = this.state.get('roles');
         Object.values(roles).forEach(role => {
-            this.createRoleTab(role, addRoleBtn);
+            const tab = this.createRoleTab(role);
+            tabsHeader.insertBefore(tab, tabsHeader.querySelector('.add-role-btn'));
         });
         
+        // Обновить активную вкладку
+        this.updateActiveTab(this.state.get('ui.activeTab'));
+        
+        // Обновить счетчики
         this.updateTabCounts();
     }
 
     /**
-     * Создать вкладку роли (теперь все роли имеют кнопку удаления)
-     * @param {Object} role - Данные роли
-     * @param {HTMLElement} insertBefore - Элемент, перед которым вставить
+     * Создать вкладку роли
+     * @param {Object} role - Объект роли
+     * @returns {HTMLElement} - Элемент вкладки
      */
-    createRoleTab(role, insertBefore) {
+    createRoleTab(role) {
         const tab = document.createElement('div');
-        tab.className = 'tab';
-        tab.setAttribute('data-tab', role.id);
+        tab.className = 'tab role-tab';
+        tab.dataset.tab = role.id;
         
         tab.innerHTML = `
             <span class="tab-icon">${role.icon}</span>
-            <span>${role.name}</span>
+            <span class="tab-name">${role.name}</span>
             <span class="tab-count">0</span>
-            <button class="tab-remove" title="Удалить роль">×</button>
+            <button class="tab-remove" data-role-id="${role.id}" title="Удалить роль">✕</button>
         `;
-
-        // Обработчик удаления - теперь для всех ролей
+        
+        // Обработчик удаления роли
         const removeBtn = tab.querySelector('.tab-remove');
         removeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.openDeleteConfirmModal(role.id, role.name);
+            this.confirmDeleteRole(role.id);
         });
-
-        insertBefore.parentNode.insertBefore(tab, insertBefore);
-    }
-
-    /**
-     * Открыть модальное окно подтверждения удаления
-     * @param {string} roleId - ID роли
-     * @param {string} roleName - Название роли
-     */
-    openDeleteConfirmModal(roleId, roleName) {
-        this.pendingDeleteRoleId = roleId;
         
-        const role = this.state.get(`roles.${roleId}`);
-        if (!role) return;
-
-        // Заполнить данные роли
-        document.getElementById('deleteRoleName').textContent = roleName;
-        document.getElementById('deleteReferencesCount').textContent = role.references?.length || 0;
-        
-        const createdDate = new Date(role.createdAt).toLocaleString('ru-RU', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        document.getElementById('deleteCreatedDate').textContent = createdDate;
-
-        this.deleteConfirmModal.classList.add('visible');
-        
-        // Фокус на кнопку отмены для безопасности
-        setTimeout(() => {
-            document.getElementById('cancelDeleteBtn').focus();
-        }, 100);
-
-        this.events.emit('delete-confirm-modal:opened', { roleId, roleName });
-    }
-
-    /**
-     * Закрыть модальное окно подтверждения удаления
-     */
-    closeDeleteConfirmModal() {
-        this.deleteConfirmModal.classList.remove('visible');
-        this.pendingDeleteRoleId = null;
-        this.events.emit('delete-confirm-modal:closed');
-    }
-
-    /**
-     * Подтвердить удаление роли
-     */
-    confirmRoleDeletion() {
-        if (!this.pendingDeleteRoleId) return;
-
-        const roleId = this.pendingDeleteRoleId;
-        const role = this.state.get(`roles.${roleId}`);
-        
-        // Удалить роль через state manager
-        this.state.deleteRole(roleId);
-        
-        this.closeDeleteConfirmModal();
-        
-        // Показать уведомление об успешном удалении
-        this.events.emit('ui:show-notification', {
-            message: `Роль "${role.name}" удалена`,
-            type: 'info',
-            duration: 2000
-        });
-
-        this.events.emit('role:deleted-via-ui', { roleId, role });
+        return tab;
     }
 
     /**
@@ -999,21 +352,16 @@ export class TabsModule {
      * @param {string} tabId - ID вкладки
      */
     switchToTab(tabId) {
-        const currentTab = this.state.get('ui.activeTab');
-        if (currentTab === tabId) return;
-
-        this.state.switchTab(tabId);
+        this.state.set('ui.activeTab', tabId);
         
-        // Эмитируем событие для других модулей
-        this.events.emit('tab:switched', { 
-            from: currentTab, 
-            to: tabId,
+        this.events.emit('tab:switched', {
+            tabId,
             isMainTree: tabId === 'main'
         });
     }
 
     /**
-     * Обновить активную вкладку в UI
+     * Обновить активную вкладку
      * @param {string} newTab - Новая активная вкладка
      * @param {string} oldTab - Предыдущая активная вкладка
      */
@@ -1118,6 +466,593 @@ export class TabsModule {
         this.closeRoleModal();
 
         this.events.emit('role:created-via-ui', { roleId: role.id, role });
+    }
+
+    /**
+     * Подтвердить удаление роли
+     * @param {string} roleId - ID роли для удаления
+     */
+    confirmDeleteRole(roleId) {
+        const role = this.state.get(`roles.${roleId}`);
+        if (!role) return;
+
+        // Заполнить информацию в модальном окне
+        document.getElementById('deleteRoleName').textContent = role.name;
+        document.getElementById('deleteReferencesCount').textContent = role.references?.length || 0;
+        
+        // Форматировать дату создания
+        let createdDate = '-';
+        if (role.createdAt) {
+            try {
+                const date = new Date(role.createdAt);
+                createdDate = date.toLocaleDateString('ru-RU');
+            } catch (e) {
+                createdDate = role.createdAt;
+            }
+        }
+        document.getElementById('deleteCreatedDate').textContent = createdDate;
+        
+        // Показать модальное окно
+        this.deleteConfirmModal.classList.add('visible');
+        
+        // Запомнить ID роли для удаления
+        this.deleteConfirmModal.dataset.roleId = roleId;
+        
+        // Фокус на кнопку отмены для безопасности
+        setTimeout(() => {
+            document.getElementById('cancelDeleteBtn').focus();
+        }, 100);
+        
+        this.events.emit('delete-confirm-modal:opened', { roleId, role });
+    }
+
+    /**
+     * Удалить роль
+     */
+    deleteRole() {
+        const roleId = this.deleteConfirmModal.dataset.roleId;
+        if (!roleId) return;
+
+        const role = this.state.get(`roles.${roleId}`);
+        const referencesCount = role?.references?.length || 0;
+
+        // Удалить роль
+        this.state.deleteRole(roleId);
+        
+        // Закрыть модальное окно
+        this.closeDeleteConfirmModal();
+        
+        // Переключиться на основное дерево
+        this.state.set('ui.activeTab', 'main');
+        
+        // Показать уведомление
+        this.events.emit('ui:show-notification', {
+            message: `Роль "${role.name}" удалена (${referencesCount} ссылок)`,
+            type: 'success',
+            duration: 3000
+        });
+
+        this.events.emit('role:deleted-via-ui', { roleId, role, referencesCount });
+    }
+
+    /**
+     * Закрыть модальное окно подтверждения удаления
+     */
+    closeDeleteConfirmModal() {
+        this.deleteConfirmModal.classList.remove('visible');
+        delete this.deleteConfirmModal.dataset.roleId;
+        this.events.emit('delete-confirm-modal:closed');
+    }
+
+    /**
+     * Сохранить проект
+     */
+    async saveProject() {
+        const saveBtn = document.getElementById('saveProjectBtn');
+        const originalContent = saveBtn.innerHTML;
+        
+        try {
+            // Визуальная обратная связь
+            saveBtn.innerHTML = `
+                <span class="btn-icon">⏳</span>
+                <span class="btn-text">Сохранение...</span>
+            `;
+            saveBtn.disabled = true;
+            
+            // Получить текущее состояние
+            const currentState = this.state.getState();
+            
+            // Добавить метаданные
+            const projectData = {
+                version: "2.0",
+                data: currentState,
+                meta: {
+                    name: this.generateProjectName(currentState),
+                    createdAt: Date.now(),
+                    blocksCount: currentState.blocks?.length || 0,
+                    rolesCount: Object.keys(currentState.roles || {}).length,
+                    connectionsCount: currentState.connections?.length || 0,
+                    appVersion: "2.0"
+                }
+            };
+            
+            // Создать файл для скачивания
+            const blob = new Blob([JSON.stringify(projectData, null, 2)], {
+                type: 'application/json'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = this.generateProjectFileName();
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // Показать уведомление об успехе
+            this.events.emit('ui:show-notification', {
+                message: 'Проект успешно сохранен',
+                type: 'success',
+                duration: 3000
+            });
+            
+            this.events.emit('project:saved', projectData.meta);
+            
+        } catch (error) {
+            console.error('❌ Project save failed:', error);
+            
+            this.events.emit('ui:show-notification', {
+                message: `Ошибка сохранения: ${error.message}`,
+                type: 'error',
+                duration: 4000
+            });
+        } finally {
+            // Восстановить кнопку
+            setTimeout(() => {
+                saveBtn.innerHTML = originalContent;
+                saveBtn.disabled = false;
+            }, 500);
+        }
+    }
+
+    /**
+     * Загрузить проект
+     */
+    async loadProject() {
+        const loadBtn = document.getElementById('loadProjectBtn');
+        const originalContent = loadBtn.innerHTML;
+        
+        try {
+            // Визуальная обратная связь
+            loadBtn.innerHTML = `
+                <span class="btn-icon">📂</span>
+                <span class="btn-text">Выбор файла...</span>
+            `;
+            loadBtn.disabled = true;
+            
+            // Создать input для выбора файла
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.json';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
+            
+            // Обработчик выбора файла
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                try {
+                    loadBtn.innerHTML = `
+                        <span class="btn-icon">⏳</span>
+                        <span class="btn-text">Загрузка...</span>
+                    `;
+                    
+                    const fileContent = await this.readFileAsText(file);
+                    const projectData = JSON.parse(fileContent);
+                    
+                    // Валидация файла
+                    const validation = this.validateProjectFile(projectData);
+                    if (!validation.isValid) {
+                        throw new Error(validation.error);
+                    }
+                    
+                    // Сохранить данные и показать подтверждение
+                    this.pendingProjectData = projectData.data;
+                    this.showLoadConfirmModal(projectData.meta || {});
+                    
+                } catch (parseError) {
+                    console.error('❌ Project parse failed:', parseError);
+                    this.events.emit('ui:show-notification', {
+                        message: `Ошибка загрузки: ${parseError.message}`,
+                        type: 'error',
+                        duration: 4000
+                    });
+                } finally {
+                    document.body.removeChild(fileInput);
+                }
+            });
+            
+            // Открыть диалог выбора файла
+            fileInput.click();
+            
+        } catch (error) {
+            console.error('❌ Project load failed:', error);
+            
+            this.events.emit('ui:show-notification', {
+                message: `Ошибка загрузки: ${error.message}`,
+                type: 'error',
+                duration: 4000
+            });
+        } finally {
+            // Восстановить кнопку
+            setTimeout(() => {
+                loadBtn.innerHTML = originalContent;
+                loadBtn.disabled = false;
+            }, 500);
+        }
+    }
+
+    /**
+     * Прочитать файл как текст
+     * @param {File} file - Файл для чтения
+     * @returns {Promise<string>} - Содержимое файла
+     */
+    readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = () => reject(new Error('Ошибка чтения файла'));
+            
+            reader.readAsText(file);
+        });
+    }
+
+    /**
+     * Валидировать файл проекта
+     * @param {Object} data - Данные из файла
+     * @returns {Object} - Результат валидации {isValid, error}
+     */
+    validateProjectFile(data) {
+        // Проверка базовой структуры
+        if (!data || typeof data !== 'object') {
+            return { isValid: false, error: 'Файл не содержит валидных данных' };
+        }
+        
+        // Проверка наличия обязательных полей
+        if (!data.version) {
+            return { isValid: false, error: 'Отсутствует информация о версии' };
+        }
+        
+        if (!data.data) {
+            return { isValid: false, error: 'Отсутствуют данные приложения' };
+        }
+        
+        // Проверка версии
+        const supportedVersions = ['1.0', '2.0'];
+        if (!supportedVersions.includes(data.version)) {
+            return { isValid: false, error: `Неподдерживаемая версия: ${data.version}` };
+        }
+        
+        // Проверка структуры данных
+        const stateData = data.data;
+        if (!stateData || typeof stateData !== 'object') {
+            return { isValid: false, error: 'Некорректная структура данных' };
+        }
+        
+        // Проверка обязательных полей состояния
+        if (!Array.isArray(stateData.blocks)) {
+            return { isValid: false, error: 'Отсутствует массив блоков' };
+        }
+        
+        if (!stateData.roles || typeof stateData.roles !== 'object') {
+            return { isValid: false, error: 'Отсутствует объект ролей' };
+        }
+        
+        if (!Array.isArray(stateData.connections)) {
+            return { isValid: false, error: 'Отсутствует массив связей' };
+        }
+        
+        console.log('✅ Project file validation passed');
+        return { isValid: true };
+    }
+
+    /**
+     * Показать модальное окно подтверждения загрузки
+     * @param {Object} projectMeta - Метаданные проекта
+     */
+    showLoadConfirmModal(projectMeta) {
+        // Заполнить информацию о проекте
+        const projectName = projectMeta.name || 'Проект без названия';
+        document.getElementById('loadProjectName').textContent = projectName;
+        
+        document.getElementById('loadBlocksCount').textContent = projectMeta.blocksCount || 0;
+        document.getElementById('loadRolesCount').textContent = projectMeta.rolesCount || 0;
+        document.getElementById('loadConnectionsCount').textContent = projectMeta.connectionsCount || 0;
+        
+        // Форматировать дату создания
+        let createdDate = '-';
+        if (projectMeta.createdAt) {
+            try {
+                const date = new Date(projectMeta.createdAt);
+                createdDate = date.toLocaleString('ru-RU', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                createdDate = projectMeta.createdAt;
+            }
+        }
+        document.getElementById('loadCreatedDate').textContent = createdDate;
+        
+        // Показать модальное окно
+        this.loadConfirmModal.classList.add('visible');
+        
+        // Фокус на кнопку отмены для безопасности
+        setTimeout(() => {
+            document.getElementById('cancelLoadBtn').focus();
+        }, 100);
+        
+        this.events.emit('load-confirm-modal:opened', { projectMeta });
+    }
+
+    /**
+     * Подтвердить загрузку проекта
+     * ИСПРАВЛЕНИЕ: Добавлен принудительный перерендер
+     */
+    confirmProjectLoad() {
+        if (!this.pendingProjectData) return;
+        
+        // Сохранить данные для статистики до очистки
+        const projectStats = {
+            blocks: this.pendingProjectData.blocks?.length || 0,
+            roles: Object.keys(this.pendingProjectData.roles || {}).length,
+            connections: this.pendingProjectData.connections?.length || 0
+        };
+        
+        try {
+            console.log('🔄 Loading project data into application...');
+            
+            // Использовать MigrationModule для автоматической миграции
+            if (window.app && window.app.modules.migration) {
+                const migratedData = window.app.modules.migration.autoMigrate(this.pendingProjectData);
+                this.state.setState(migratedData);
+            } else {
+                // Fallback: прямая загрузка
+                this.state.setState(this.pendingProjectData);
+            }
+            
+            // Закрыть модальное окно
+            this.closeLoadConfirmModal();
+            
+            // Переключиться на основное дерево
+            this.state.set('ui.activeTab', 'main');
+            
+            // ИСПРАВЛЕНИЕ: Принудительно перерендерить вкладки после загрузки
+            this.forceRerenderTabs();
+            
+            // Показать уведомление об успехе
+            this.events.emit('ui:show-notification', {
+                message: 'Проект успешно загружен',
+                type: 'success',
+                duration: 3000
+            });
+            
+            // Эмитировать событие для статистики (используем сохраненные данные)
+            this.events.emit('project:loaded', projectStats);
+            
+            console.log('✅ Project loaded successfully');
+            
+        } catch (error) {
+            console.error('❌ Project load application failed:', error);
+            
+            this.events.emit('ui:show-notification', {
+                message: 'Ошибка применения проекта',
+                type: 'error',
+                duration: 3000
+            });
+        } finally {
+            // Очистить временные данные
+            this.pendingProjectData = null;
+        }
+    }
+
+    /**
+     * Отменить загрузку проекта
+     */
+    cancelProjectLoad() {
+        this.pendingProjectData = null;
+        this.closeLoadConfirmModal();
+        
+        this.events.emit('project:load-cancelled');
+    }
+
+    /**
+     * Закрыть модальное окно подтверждения загрузки
+     */
+    closeLoadConfirmModal() {
+        this.loadConfirmModal.classList.remove('visible');
+        this.events.emit('load-confirm-modal:closed');
+    }
+
+    /**
+     * Сгенерировать название проекта на основе содержимого
+     * @param {Object} state - Состояние приложения
+     * @returns {string} - Название проекта
+     */
+    generateProjectName(state) {
+        const blocks = state.blocks || [];
+        
+        if (blocks.length === 0) {
+            return 'Пустой проект';
+        }
+        
+        // Попробовать найти осмысленное название среди первых блоков
+        for (const block of blocks.slice(0, 3)) {
+            if (block.title && block.title.length > 3 && block.title.length < 30) {
+                return block.title.replace(/[^\w\s-]/g, '');
+            }
+        }
+        
+        // Если нет подходящих заголовков
+        return `Проект (${blocks.length} блоков)`;
+    }
+
+    /**
+     * Генерировать имя файла проекта
+     * @returns {string} - Имя файла в формате notes-project-YYYY-MM-DD-HHmm.json
+     */
+    generateProjectFileName() {
+        const now = new Date();
+        
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        
+        return `notes-project-${year}-${month}-${day}-${hours}${minutes}.json`;
+    }
+
+    /**
+     * Настройка событий модального окна создания роли
+     */
+    setupRoleModalEvents() {
+        const roleNameInput = document.getElementById('roleNameInput');
+        const cancelRoleBtn = document.getElementById('cancelRoleBtn');
+        const saveRoleBtn = document.getElementById('saveRoleBtn');
+
+        // Валидация ввода
+        roleNameInput.addEventListener('input', (e) => {
+            const value = e.target.value.trim();
+            saveRoleBtn.disabled = value.length === 0;
+        });
+
+        // Enter для сохранения
+        roleNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !saveRoleBtn.disabled) {
+                this.createRole(roleNameInput.value.trim());
+            }
+        });
+
+        // Кнопки
+        cancelRoleBtn.addEventListener('click', () => this.closeRoleModal());
+        saveRoleBtn.addEventListener('click', () => {
+            const roleName = roleNameInput.value.trim();
+            if (roleName) {
+                this.createRole(roleName);
+            }
+        });
+
+        // Закрытие по оверлею
+        this.roleModal.addEventListener('click', (e) => {
+            if (e.target === this.roleModal) {
+                this.closeRoleModal();
+            }
+        });
+
+        // Подсказки
+        document.querySelectorAll('.role-suggestion').forEach(suggestion => {
+            suggestion.addEventListener('click', () => {
+                const roleText = suggestion.dataset.role;
+                const roleName = roleText.substring(2).trim(); // Убрать эмодзи
+                roleNameInput.value = roleName;
+                saveRoleBtn.disabled = false;
+                roleNameInput.focus();
+            });
+        });
+    }
+
+    /**
+     * Настройка событий модального окна подтверждения удаления
+     */
+    setupDeleteConfirmModalEvents() {
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+        // Кнопки
+        cancelDeleteBtn.addEventListener('click', () => this.closeDeleteConfirmModal());
+        confirmDeleteBtn.addEventListener('click', () => this.deleteRole());
+
+        // Закрытие по оверлею
+        this.deleteConfirmModal.addEventListener('click', (e) => {
+            if (e.target === this.deleteConfirmModal) {
+                this.closeDeleteConfirmModal();
+            }
+        });
+
+        // Escape для закрытия
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.deleteConfirmModal.classList.contains('visible')) {
+                this.closeDeleteConfirmModal();
+            }
+        });
+    }
+
+    /**
+     * Настройка событий модального окна подтверждения загрузки
+     */
+    setupLoadConfirmModalEvents() {
+        const cancelLoadBtn = document.getElementById('cancelLoadBtn');
+        const confirmLoadBtn = document.getElementById('confirmLoadBtn');
+
+        // Кнопки
+        cancelLoadBtn.addEventListener('click', () => this.cancelProjectLoad());
+        confirmLoadBtn.addEventListener('click', () => this.confirmProjectLoad());
+
+        // Закрытие по оверлею
+        this.loadConfirmModal.addEventListener('click', (e) => {
+            if (e.target === this.loadConfirmModal) {
+                this.cancelProjectLoad();
+            }
+        });
+
+        // Escape для закрытия
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.loadConfirmModal.classList.contains('visible')) {
+                this.cancelProjectLoad();
+            }
+        });
+    }
+
+    /**
+     * Обработка горячих клавиш
+     * @param {KeyboardEvent} e - Событие клавиатуры
+     */
+    handleKeydown(e) {
+        // Игнорировать если фокус в поле ввода
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            return;
+        }
+
+        // Ctrl + T - создать роль
+        if (e.ctrlKey && e.key === 't') {
+            e.preventDefault();
+            this.openRoleModal();
+            return;
+        }
+
+        // Переключение вкладок
+        if (e.ctrlKey && e.key >= '1' && e.key <= '9') {
+            e.preventDefault();
+            
+            const index = parseInt(e.key) - 1;
+            const roles = this.state.get('roles');
+            const roleIds = Object.keys(roles);
+            
+            if (index === 0) {
+                // Ctrl+1 - основное дерево
+                this.switchToTab('main');
+            } else if (index <= roleIds.length) {
+                // Ctrl+2,3,4... - роли по порядку
+                this.switchToTab(roleIds[index - 1]);
+            }
+        }
     }
 
     /**

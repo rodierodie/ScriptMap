@@ -1,5 +1,6 @@
 /**
  * Notes App v2.0 - Главный класс приложения с системой вкладок и ролей
+ * FIXED: Добавлено событие после восстановления состояния
  */
 
 // Импорт модулей
@@ -55,17 +56,21 @@ class NotesApp {
             // 6. Создание начального содержимого
             this.createInitialContent();
             
-            // 7. Экспорт в глобальную область для отладки
-            this.exposeToGlobal();
+            // 7. Настройка автосохранения v2.0
+            this.setupAutoSave();
             
-            console.log('✅ Notes App v2.0 initialized successfully');
-            console.log('📦 Available modules:', Object.keys(this.modules));
-            console.log('🎯 New features: Tabs, Roles, Blocks Palette, Project Load/Save');
-            console.log('🔗 Try: Ctrl+C for connections, Ctrl+T for new roles');
+            // 8. Настройка обновления статистики
+            this.setupStatsUpdater();
+            
+            // 9. Настройка горячих клавиш
+            this.setupHotkeys();
+            
+            // 10. Финализация
+            this.finalize();
             
         } catch (error) {
-            console.error('❌ Failed to initialize app:', error);
-            this.handleInitializationError(error);
+            console.error('❌ App initialization failed:', error);
+            this.handleInitError(error);
         }
     }
 
@@ -73,56 +78,40 @@ class NotesApp {
      * Инициализация модуля миграции
      */
     async initMigration() {
-        try {
-            this.modules.migration = new MigrationModule(this.state, this.events);
-            console.log('✅ Migration module loaded');
-        } catch (error) {
-            console.error('❌ Failed to load migration module:', error);
-            throw new Error('Migration module loading failed');
-        }
+        this.modules.migration = new MigrationModule(this.state, this.events);
+        console.log('✅ Migration module loaded');
     }
 
     /**
      * Загрузка основных модулей
      */
     async loadCoreModules() {
-        const coreModules = [
-            { name: 'canvas', Class: CanvasModule },
-            { name: 'notes', Class: NotesModule },
-            { name: 'connections', Class: ConnectionsModule }
-        ];
-
-        for (const { name, Class } of coreModules) {
-            try {
-                this.modules[name] = new Class(this.state, this.events);
-                console.log(`✅ ${name} module loaded`);
-            } catch (error) {
-                console.error(`❌ Failed to load ${name} module:`, error);
-                throw new Error(`Core module loading failed: ${name}`);
-            }
-        }
+        // Модуль состояния холста
+        this.modules.canvas = new CanvasModule(this.state, this.events);
+        
+        // Модуль заметок/блоков
+        this.modules.notes = new NotesModule(this.state, this.events);
+        
+        // Модуль связей между блоками
+        this.modules.connections = new ConnectionsModule(this.state, this.events);
+        
+        console.log('✅ Core modules loaded');
     }
 
     /**
      * Загрузка UI модулей
      */
     async loadUIModules() {
-        const uiModules = [
-            { name: 'tabs', Class: TabsModule },
-            { name: 'palette', Class: BlocksPaletteModule },
-            { name: 'ui', Class: UIModule }
-        ];
-
-        for (const { name, Class } of uiModules) {
-            try {
-                this.modules[name] = new Class(this.state, this.events);
-                console.log(`✅ ${name} module loaded`);
-            } catch (error) {
-                console.error(`❌ Failed to load ${name} module:`, error);
-                // UI модули не критичны - продолжаем работу
-                console.warn(`⚠️ Continuing without ${name} module`);
-            }
-        }
+        // Модуль пользовательского интерфейса
+        this.modules.ui = new UIModule(this.state, this.events);
+        
+        // Модуль системы вкладок и ролей (приоритетный)
+        this.modules.tabs = new TabsModule(this.state, this.events);
+        
+        // Модуль палитры блоков
+        this.modules.palette = new BlocksPaletteModule(this.state, this.events);
+        
+        console.log('✅ UI modules loaded');
     }
 
     /**
@@ -131,159 +120,35 @@ class NotesApp {
     setupGlobalHandlers() {
         // Обработка ошибок
         window.addEventListener('error', (e) => {
-            console.error('Global error:', e.error);
-            this.events.emit('app:error', { error: e.error, message: e.message });
+            console.error('🚨 Global error:', e.error);
+            this.modules.ui?.showNotification('Произошла ошибка', 'error');
+        });
+
+        // Обработка необработанных промисов
+        window.addEventListener('unhandledrejection', (e) => {
+            console.error('🚨 Unhandled promise rejection:', e.reason);
+            this.modules.ui?.showNotification('Ошибка выполнения операции', 'error');
+            e.preventDefault();
         });
 
         // Обработка изменения размера окна
+        let resizeTimeout;
         window.addEventListener('resize', () => {
-            this.events.emit('app:resize', {
-                width: window.innerWidth,
-                height: window.innerHeight
-            });
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                this.events.emit('window:resized', {
+                    width: window.innerWidth,
+                    height: window.innerHeight
+                });
+            }, 250);
         });
 
-        // Обработка видимости страницы
-        document.addEventListener('visibilitychange', () => {
-            this.events.emit('app:visibility-change', {
-                hidden: document.hidden
-            });
-        });
-
-        // Автосохранение с поддержкой v2.0
-        this.setupAutoSave();
-
-        // Уведомления о статистике
-        this.setupStatsUpdater();
-
-        // Связь между модулями
-        this.setupModulesIntegration();
-
-        // Глобальные горячие клавиши
-        this.setupGlobalHotkeys();
-    }
-
-    /**
-     * Настройка интеграции между модулями
-     */
-    setupModulesIntegration() {
-        // Перенаправляем уведомления от модулей в UI
-        ['connections', 'tabs', 'palette'].forEach(moduleName => {
-            this.events.on(`${moduleName}:notification`, (data) => {
-                if (this.modules.ui) {
-                    this.modules.ui.showNotification(data.message, data.type, data.duration);
-                }
-            });
-        });
-
-        // Интеграция вкладок с другими модулями
-        this.events.on('tab:context-changed', (context) => {
-            // Обновить кнопку добавления в UI
-            this.updateAddButton(context);
-            
-            // Уведомить все модули о смене контекста
-            this.events.emit('app:context-changed', context);
-        });
-
-        // Обработка запросов на добавление
-        this.events.on('ui:add-request', () => {
-            const tabInfo = this.modules.tabs?.getCurrentTabInfo();
-            
-            if (tabInfo?.canCreateBlocks) {
-                // В основном дереве - создать блок
-                this.events.emit('note:create');
-            } else if (tabInfo?.canCreateReferences) {
-                // В роли - открыть палитру
-                this.events.emit('ui:add-reference-request');
-            }
-        });
-    }
-
-    /**
-     * Обновить кнопку добавления в зависимости от контекста
-     * @param {Object} context - Контекст вкладки
-     */
-    updateAddButton(context) {
-        const addBtn = document.querySelector('.add-note-btn');
-        if (!addBtn) return;
-
-        if (context.canCreateBlocks) {
-            addBtn.title = 'Создать новый блок';
-            addBtn.classList.remove('palette-mode');
-        } else if (context.canCreateReferences) {
-            addBtn.title = 'Добавить блок из палитры';
-            addBtn.classList.add('palette-mode');
-        }
-    }
-
-    /**
-     * Настройка глобальных горячих клавиш
-     */
-    setupGlobalHotkeys() {
-        document.addEventListener('keydown', (e) => {
-            // Не обрабатывать если открыто модальное окно
-            if (document.querySelector('.modal-overlay, .role-modal-overlay.visible')) {
-                return;
-            }
-
-            if (e.ctrlKey || e.metaKey) {
-                switch (e.key) {
-                    case 'e':
-                        e.preventDefault();
-                        this.exportAppData();
-                        break;
-                    case 'i':
-                        e.preventDefault();
-                        this.importAppData();
-                        break;
-                    case 'r':
-                        e.preventDefault();
-                        this.showAppStats();
-                        break;
-                }
-            }
-        });
-    }
-
-    /**
-     * Настройка автосохранения v2.0
-     */
-    setupAutoSave() {
-        let saveTimeout;
-        
-        this.events.on('state:change', (data) => {
-            // Сохранять изменения блоков, ролей и связей
-            if (data.path.startsWith('blocks') || 
-                data.path.startsWith('roles') || 
-                data.path.startsWith('connections')) {
-                
-                clearTimeout(saveTimeout);
-                saveTimeout = setTimeout(() => {
-                    this.saveState();
-                }, 1000);
-            }
-        });
-
-        // Сохранение при закрытии страницы
-        window.addEventListener('beforeunload', () => {
-            this.saveState();
-        });
-    }
-
-    /**
-     * Настройка обновления статистики
-     */
-    setupStatsUpdater() {
-        this.events.on('state:change', (data) => {
-            if (data.path === 'blocks') {
-                const blocksCount = data.value.length;
-                this.modules.ui?.updateNotesCount(blocksCount);
-            }
-        });
+        console.log('✅ Global handlers setup');
     }
 
     /**
      * Восстановление состояния с автоматической миграцией
+     * ИСПРАВЛЕНИЕ: Добавлено событие после восстановления состояния
      */
     async restoreState() {
         try {
@@ -299,6 +164,15 @@ class NotesApp {
                 this.state.setState(migratedData);
                 
                 console.log(`📥 Restored and migrated state from v${rawData.version || '1.0'} to v${migratedData.version}`);
+                
+                // ИСПРАВЛЕНИЕ: Принудительно обновить UI после восстановления состояния
+                setTimeout(() => {
+                    this.events.emit('state:restored-complete', { 
+                        fromVersion: rawData.version || '1.0',
+                        toVersion: migratedData.version
+                    });
+                }, 100);
+                
             } else {
                 // Создать начальное состояние v2.0
                 const initialState = this.modules.migration.getInitialV2State();
@@ -377,48 +251,225 @@ class NotesApp {
 • Ctrl+E - экспорт данных
 • Ctrl+R - статистика приложения
 
-Приятной работы! ✨`,
-                tags: ['приветствие', 'инструкция', 'v2.0'],
-                position: { x: 200, y: 200 }
+Приятной работы!`,
+                position: { x: 150, y: 150 },
+                tags: ['info', 'welcome']
             });
 
-            const demoBlock = this.state.createBlock({
-                title: 'Пример работы с ролями 👥',
-                content: `Этот блок демонстрирует новую систему ролей:
+            const featuresBlock = this.state.createBlock({
+                title: 'Основные функции v2.0',
+                content: `ВКЛАДКИ И РОЛИ:
+Переключайтесь между основным деревом и ролями. Каждая роль - это набор ссылок на блоки из основного дерева.
 
-1. СОЗДАНИЕ БЛОКОВ (вы здесь):
-   - В "Основном дереве" создаются все блоки
-   - Здесь можно редактировать содержимое
-   - Все изменения отражаются во всех ролях
+ПАЛИТРА БЛОКОВ:
+Drag & Drop блоков из основного дерева в роли. Блоки остаются в основном дереве, в роли создаются только ссылки.
 
-2. СОЗДАНИЕ РОЛЕЙ:
-   - Нажмите "Добавить роль" в панели вкладок
-   - Выберите название (Администратор, Клиент и т.д.)
+СВЯЗИ МЕЖДУ БЛОКАМИ:
+Создавайте логические связи между блоками для визуализации зависимостей и процессов.
 
-3. КОМПОНОВКА РОЛЕЙ:
-   - Переключитесь на роль
-   - Нажмите "+" для открытия палитры
-   - Выберите нужные блоки для этой роли
-
-4. РЕЗУЛЬТАТ:
-   - Каждая роль видит только свои блоки
-   - Изменения в блоке видны везде
-   - Связи работают между блоками
-
-Попробуйте создать роль и добавить этот блок!`,
-                tags: ['демо', 'роли', 'инструкция'],
-                position: { x: 600, y: 250 }
+ПРОЕКТЫ:
+Сохраняйте и загружайте полные проекты с блоками, ролями и связями.`,
+                position: { x: 450, y: 150 },
+                tags: ['features', 'guide']
             });
 
-            // Создать связь между блоками для демонстрации
-            setTimeout(() => {
-                if (this.modules.connections) {
-                    this.modules.connections.createConnection(
-                        welcomeBlock.id, 
-                        demoBlock.id
-                    );
+            const rolesBlock = this.state.createBlock({
+                title: 'Как работать с ролями',
+                content: `1. СОЗДАНИЕ РОЛИ:
+   • Нажмите "+" или Ctrl+T
+   • Введите название роли
+   • Новая вкладка появится в заголовке
+
+2. ДОБАВЛЕНИЕ БЛОКОВ В РОЛЬ:
+   • Переключитесь на роль
+   • Откройте палитру (справа)
+   • Перетащите блоки из палитры на холст
+
+3. ПЕРЕКЛЮЧЕНИЕ МЕЖДУ ВКЛАДКАМИ:
+   • Клик по вкладке
+   • Ctrl+1 (основное дерево)
+   • Ctrl+2,3,4... (роли по порядку)
+
+4. УДАЛЕНИЕ РОЛИ:
+   • Нажмите ✕ на вкладке роли
+   • Подтвердите удаление
+   • Блоки останутся в основном дереве`,
+                position: { x: 150, y: 400 },
+                tags: ['roles', 'tutorial']
+            });
+
+            // Создать связи между блоками
+            this.state.createConnection(welcomeBlock.id, featuresBlock.id);
+            this.state.createConnection(featuresBlock.id, rolesBlock.id);
+            
+            console.log('✅ Initial content created');
+        }
+    }
+
+    /**
+     * Настройка автосохранения v2.0
+     */
+    setupAutoSave() {
+        let saveTimeout;
+        
+        this.events.on('state:change', (data) => {
+            // Сохранять изменения блоков, ролей и связей
+            if (data.path.startsWith('blocks') || 
+                data.path.startsWith('roles') || 
+                data.path.startsWith('connections')) {
+                
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    this.saveState();
+                }, 1000);
+            }
+        });
+
+        // Сохранение при закрытии страницы
+        window.addEventListener('beforeunload', () => {
+            this.saveState();
+        });
+
+        console.log('✅ Auto-save setup');
+    }
+
+    /**
+     * Настройка обновления статистики
+     */
+    setupStatsUpdater() {
+        this.events.on('state:change', (data) => {
+            if (data.path === 'blocks') {
+                const blocksCount = data.value.length;
+                this.modules.ui?.updateNotesCount(blocksCount);
+            }
+        });
+
+        console.log('✅ Stats updater setup');
+    }
+
+    /**
+     * Настройка горячих клавиш приложения
+     */
+    setupHotkeys() {
+        document.addEventListener('keydown', (e) => {
+            // Игнорировать если фокус в поле ввода
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            // Ctrl+Shift+S - показать статистику
+            if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+                e.preventDefault();
+                this.showAppStats();
+                return;
+            }
+
+            // Обработка других комбинаций
+            if (e.ctrlKey) {
+                switch (e.key) {
+                    case 'e':
+                        e.preventDefault();
+                        this.exportAppData();
+                        break;
+                    case 'i':
+                        e.preventDefault();
+                        this.importAppData();
+                        break;
+                    case 'r':
+                        e.preventDefault();
+                        this.showAppStats();
+                        break;
                 }
-            }, 500);
+            }
+        });
+
+        console.log('✅ Global hotkeys setup');
+    }
+
+    /**
+     * Финализация инициализации
+     */
+    finalize() {
+        const loadTime = Date.now() - this.startTime;
+        
+        // Установить глобальную ссылку на приложение
+        window.app = this;
+        
+        // Очистить старые резервные копии
+        this.modules.migration.cleanupBackups();
+        
+        // Эмитировать событие готовности
+        this.events.emit('app:ready', {
+            version: this.version,
+            loadTime,
+            modules: Object.keys(this.modules)
+        });
+        
+        console.log(`🎉 Notes App v${this.version} initialized in ${loadTime}ms`);
+        console.log('📱 Modules loaded:', Object.keys(this.modules).join(', '));
+        
+        // Показать приветственное уведомление
+        setTimeout(() => {
+            this.modules.ui?.showNotification(`Notes App v${this.version} готов к работе!`, 'success');
+        }, 1000);
+    }
+
+    /**
+     * Обработка ошибок инициализации
+     * @param {Error} error - Ошибка инициализации
+     */
+    handleInitError(error) {
+        console.error('💥 Critical initialization error:', error);
+        
+        // Попытка отобразить базовое сообщение об ошибке
+        document.body.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: #fee;
+                border: 2px solid #f00;
+                border-radius: 8px;
+                padding: 20px;
+                font-family: Arial, sans-serif;
+                text-align: center;
+                max-width: 400px;
+            ">
+                <h2 style="color: #d00; margin-top: 0;">Ошибка инициализации</h2>
+                <p>Приложение не может быть загружено из-за критической ошибки:</p>
+                <code style="background: #f5f5f5; padding: 5px; border-radius: 3px; display: block; margin: 10px 0;">
+                    ${error.message}
+                </code>
+                <p>Попробуйте обновить страницу или очистить localStorage.</p>
+                <button onclick="localStorage.clear(); location.reload();" 
+                        style="background: #007cba; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                    Очистить данные и перезагрузить
+                </button>
+            </div>
+        `;
+    }
+
+    /**
+     * Показать статистику приложения
+     */
+    showAppStats() {
+        const stats = {
+            app: {
+                version: this.version,
+                uptime: Date.now() - this.startTime,
+                modules: Object.keys(this.modules)
+            },
+            state: this.state.getStats(),
+            tabs: this.modules.tabs?.getStats(),
+            migration: this.modules.migration?.getStats()
+        };
+
+        console.log('📊 App Statistics:', stats);
+        
+        // Показать в UI если доступно
+        if (this.modules.ui) {
+            this.modules.ui.showStatsModal(stats);
         }
     }
 
@@ -430,13 +481,18 @@ class NotesApp {
             const currentState = this.state.getState();
             const exportData = this.modules.migration.exportData(currentState);
             
-            const dataStr = JSON.stringify(exportData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+                type: 'application/json'
+            });
             
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = `notes-app-export-${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `notes-app-export-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
             
             this.modules.ui?.showNotification('Данные экспортированы', 'success');
             
@@ -453,270 +509,78 @@ class NotesApp {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.json';
+        input.style.display = 'none';
         
-        input.onchange = (e) => {
+        input.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
             
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const importData = JSON.parse(e.target.result);
-                    const migratedData = this.modules.migration.autoMigrate(importData);
-                    
-                    this.state.setState(migratedData);
-                    this.modules.ui?.showNotification('Данные импортированы', 'success');
-                    
-                } catch (error) {
-                    console.error('❌ Import failed:', error);
-                    this.modules.ui?.showNotification('Ошибка импорта', 'error');
-                }
-            };
-            reader.readAsText(file);
-        };
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                
+                // Миграция и применение данных
+                const migratedData = this.modules.migration.autoMigrate(data);
+                this.state.setState(migratedData);
+                
+                this.modules.ui?.showNotification('Данные импортированы', 'success');
+                
+            } catch (error) {
+                console.error('❌ Import failed:', error);
+                this.modules.ui?.showNotification('Ошибка импорта', 'error');
+            } finally {
+                document.body.removeChild(input);
+            }
+        });
         
+        document.body.appendChild(input);
         input.click();
     }
 
     /**
-     * Показать статистику приложения
+     * Получить информацию о приложении
+     * @returns {Object} - Информация о приложении
      */
-    showAppStats() {
-        const stats = this.getAppStats();
-        const message = [
-            `📊 Статистика Notes App v${this.version}:`,
-            ``,
-            `📦 Модули: ${stats.modules}`,
-            `🧱 Блоки: ${stats.state.blocks.total}`,
-            `👥 Роли: ${stats.state.roles.total} (${stats.state.roles.custom} пользовательских)`,
-            `🔗 Связи: ${stats.state.connections.total}`,
-            `📎 Ссылки: ${stats.state.roles.totalReferences}`,
-            ``,
-            `💾 Размер состояния: ${Math.round(stats.state.stateSize / 1024)} KB`,
-            `⏱️ Время работы: ${Math.round(stats.uptime / 1000)} сек`,
-            ``,
-            `🔧 Ctrl+E = экспорт • Ctrl+I = импорт`
-        ].join('\n');
-        
-        alert(message);
-    }
-
-    /**
-     * Экспорт в глобальную область для отладки v2.0
-     */
-    exposeToGlobal() {
-        if (typeof window !== 'undefined') {
-            window.notesApp = this;
-            
-            // Обновленные команды отладки для v2.0
-            window.appDebug = {
-                // Состояние
-                state: () => this.state.getState(),
-                blocks: () => this.state.get('blocks'),
-                roles: () => this.state.get('roles'),
-                connections: () => this.state.get('connections'),
-                
-                // Статистика
-                stats: () => this.getAppStats(),
-                migration: () => this.modules.migration?.getMigrationInfo(),
-                
-                // Действия
-                export: () => this.exportAppData(),
-                import: () => this.importAppData(),
-                clear: () => this.clearAllData(),
-                
-                // Модули
-                modules: () => Object.keys(this.modules),
-                tabs: () => this.modules.tabs?.getStats(),
-                palette: () => this.modules.palette?.getStats(),
-                
-                // Тестирование
-                createTestRole: (name = 'Тестовая роль') => {
-                    return this.state.createRole({ name });
-                },
-                createTestBlock: (title = 'Тестовый блок') => {
-                    return this.state.createBlock({ title });
-                },
-                
-                // Отладка
-                enableDebug: () => {
-                    this.events.setDebug(true);
-                    this.state.setDebug(true);
-                    console.log('🐛 Debug mode enabled');
-                },
-                
-                help: () => {
-                    console.log(`
-🔧 Debug Commands v2.0:
-• appDebug.state() - показать полное состояние
-• appDebug.blocks() - показать все блоки
-• appDebug.roles() - показать все роли
-• appDebug.connections() - показать все связи
-• appDebug.stats() - статистика приложения
-• appDebug.tabs() - статистика вкладок
-• appDebug.palette() - статистика палитры
-• appDebug.export() - экспорт данных
-• appDebug.import() - импорт данных
-• appDebug.clear() - очистить все
-• appDebug.createTestRole() - создать тестовую роль
-• appDebug.createTestBlock() - создать тестовый блок
-• appDebug.enableDebug() - включить отладку
-                    `);
-                }
-            };
-            
-            console.log('🔧 Debug tools v2.0 available as window.appDebug');
-            console.log('💡 Type: appDebug.help() for commands');
-            console.log('🎯 New: appDebug.tabs(), appDebug.roles(), appDebug.createTestRole()');
-        }
-    }
-
-    /**
-     * Обработка ошибки инициализации
-     * @param {Error} error - Ошибка
-     */
-    handleInitializationError(error) {
-        document.body.innerHTML = `
-            <div style="
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: #fff;
-                padding: 40px;
-                border-radius: 12px;
-                box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-                text-align: center;
-                max-width: 500px;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            ">
-                <h2 style="color: #ea4335; margin-bottom: 16px;">⚠️ Ошибка загрузки v2.0</h2>
-                <p style="margin-bottom: 24px; color: #5f6368;">
-                    Не удалось загрузить Notes App v2.0. Возможно, произошла ошибка миграции данных.
-                    Попробуйте обновить страницу или очистить данные приложения.
-                </p>
-                <div style="display: flex; gap: 12px; justify-content: center;">
-                    <button onclick="window.location.reload()" style="
-                        background: #4285f4;
-                        color: white;
-                        border: none;
-                        padding: 12px 24px;
-                        border-radius: 6px;
-                        cursor: pointer;
-                        font-size: 14px;
-                    ">Обновить страницу</button>
-                    <button onclick="localStorage.clear(); window.location.reload()" style="
-                        background: #ea4335;
-                        color: white;
-                        border: none;
-                        padding: 12px 24px;
-                        border-radius: 6px;
-                        cursor: pointer;
-                        font-size: 14px;
-                    ">Очистить данные</button>
-                </div>
-            </div>
-        `;
-    }
-
-    // === ПУБЛИЧНЫЙ API v2.0 ===
-
-    /**
-     * Получить версию приложения
-     * @returns {string} - Версия
-     */
-    getVersion() {
-        return this.version;
-    }
-
-    /**
-     * Получить статистику приложения v2.0
-     * @returns {Object} - Объект со статистикой
-     */
-    getAppStats() {
+    getAppInfo() {
         return {
             version: this.version,
-            modules: Object.keys(this.modules).length,
-            events: this.events.getStats(),
-            state: this.state.getStats(),
+            startTime: this.startTime,
             uptime: Date.now() - this.startTime,
-            migration: this.modules.migration?.getMigrationInfo()
+            modules: Object.keys(this.modules),
+            state: {
+                blocks: this.state.get('blocks').length,
+                roles: Object.keys(this.state.get('roles')).length,
+                connections: this.state.get('connections').length
+            }
         };
     }
 
     /**
-     * Очистить все данные v2.0
+     * Уничтожение приложения
      */
-    clearAllData() {
-        if (confirm('Удалить все блоки, роли, связи и сбросить к начальному состоянию v2.0?')) {
-            const initialState = this.modules.migration.getInitialV2State();
-            this.state.setState(initialState);
-            localStorage.removeItem('notes-app-state');
-            this.modules.ui?.showNotification('Все данные очищены', 'info');
-        }
-    }
-
-    // Сохранить обратную совместимость с v1.0 API
-    addModule(name, module) {
-        return this.addModule(name, module);
-    }
-
-    getModule(name) {
-        return this.modules[name] || null;
-    }
-
-    getEvents() {
-        return this.events;
-    }
-
-    getState() {
-        return this.state;
-    }
-
-    exportData() {
-        const currentState = this.state.getState();
-        return this.modules.migration.exportData(currentState);
-    }
-
-    importData(data) {
-        try {
-            const migratedData = this.modules.migration.autoMigrate(data);
-            this.state.setState(migratedData);
-            this.modules.ui?.showNotification('Данные успешно импортированы', 'success');
-        } catch (error) {
-            console.error('❌ Import failed:', error);
-            this.modules.ui?.showNotification('Ошибка импорта данных', 'error');
-        }
+    destroy() {
+        // Сохранить состояние перед уничтожением
+        this.saveState();
+        
+        // Уничтожить все модули
+        Object.values(this.modules).forEach(module => {
+            if (module.destroy) {
+                module.destroy();
+            }
+        });
+        
+        // Очистить ссылки
+        this.modules = {};
+        delete window.app;
+        
+        console.log('🗑️ App destroyed');
     }
 }
 
-// === ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ===
-window.addEventListener('load', () => {
-    window.app = new NotesApp();
+// Инициализация приложения при загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
+    new NotesApp();
 });
 
-// === ГЛОБАЛЬНЫЕ ФУНКЦИИ ДЛЯ МОДАЛЬНОГО ОКНА (обратная совместимость) ===
-window.closeNoteModal = function() {
-    if (window.app && window.app.modules.notes) {
-        window.app.modules.notes.closeNoteModal();
-    }
-};
-
-window.saveNoteModal = function(noteId) {
-    const modal = document.getElementById('noteModal');
-    if (!modal || !window.app || !window.app.modules.notes) return;
-    
-    const titleInput = modal.querySelector('.modal-title-input');
-    const tagsInput = modal.querySelector('#tagsInput');
-    const contentTextarea = modal.querySelector('.modal-content-textarea');
-    
-    if (titleInput && contentTextarea && tagsInput) {
-        window.app.modules.notes.saveNoteFromModal(
-            noteId, 
-            titleInput.value, 
-            contentTextarea.value,
-            tagsInput.value
-        );
-        window.app.modules.notes.closeNoteModal();
-    }
-};
+// Экспорт для использования в других модулях
+export { NotesApp };

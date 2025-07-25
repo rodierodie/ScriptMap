@@ -1,6 +1,7 @@
 /**
  * State Manager v2.0 - Централизованное управление состоянием приложения
  * Поддержка новой структуры данных с блоками и ролями
+ * FIXED: Добавлено событие state:replaced при полной замене состояния
  */
 export class StateManager {
     constructor(events) {
@@ -182,20 +183,20 @@ export class StateManager {
             if (path.startsWith('current.')) {
                 this.setCurrentTabData(path.substring(8), value);
             } else {
-                this.setDirectPath(path, value);
+                this.setNestedValue(path, value);
             }
             
-            if (this.debugMode) {
-                console.log(`📝 State updated: ${path}`, { oldValue, newValue: value });
-            }
-            
-            // Отправить событие об изменении состояния
-            this.events.emit('state:change', { 
-                path, 
-                value, 
+            // Эмитировать событие изменения
+            this.events.emit('state:change', {
+                path,
+                value,
                 oldValue,
                 timestamp: Date.now()
             });
+            
+            if (this.debugMode) {
+                console.log(`🔄 State changed: ${path} =`, value);
+            }
             
         } catch (error) {
             console.error(`❌ Error setting state path "${path}":`, error);
@@ -213,44 +214,45 @@ export class StateManager {
         const activeTab = this.get('ui.activeTab');
         
         if (activeTab === 'main') {
-            // В основном дереве обновляем блоки
+            // В основном дереве работаем с блоками
             if (subPath === 'items' || subPath === '') {
-                this.setDirectPath('blocks', value);
+                this.setNestedValue('blocks', value);
             } else {
-                this.setDirectPath(`blocks.${subPath}`, value);
+                this.setNestedValue(`blocks.${subPath}`, value);
             }
         } else {
-            // В ролях обновляем ссылки
+            // В ролях работаем со ссылками
             if (subPath === 'items' || subPath === '') {
-                this.setDirectPath(`roles.${activeTab}.references`, value);
+                this.setNestedValue(`roles.${activeTab}.references`, value);
             } else {
-                this.setDirectPath(`roles.${activeTab}.${subPath}`, value);
+                this.setNestedValue(`roles.${activeTab}.${subPath}`, value);
             }
         }
     }
 
     /**
-     * Установить значение по прямому пути
-     * @param {string} path - Путь к значению
+     * Установить вложенное значение по пути
+     * @param {string} path - Путь к значению (разделенный точками)
      * @param {*} value - Новое значение
      */
-    setDirectPath(path, value) {
+    setNestedValue(path, value) {
         if (!path) {
             this.state = value;
-        } else {
-            const keys = path.split('.');
-            const lastKey = keys.pop();
-            
-            // Создать вложенные объекты если их нет
-            const target = keys.reduce((obj, key) => {
-                if (!obj[key] || typeof obj[key] !== 'object') {
-                    obj[key] = {};
-                }
-                return obj[key];
-            }, this.state);
-            
-            target[lastKey] = value;
+            return;
         }
+        
+        const keys = path.split('.');
+        const lastKey = keys.pop();
+        
+        // Создать вложенные объекты если их нет
+        const target = keys.reduce((obj, key) => {
+            if (!obj[key] || typeof obj[key] !== 'object') {
+                obj[key] = {};
+            }
+            return obj[key];
+        }, this.state);
+        
+        target[lastKey] = value;
     }
 
     /**
@@ -290,97 +292,35 @@ export class StateManager {
             )
         );
         
-        this.events.emit('block:updated', { id: blockId, updates });
+        this.events.emit('block:updated', { blockId, updates });
         return this;
     }
 
     /**
-     * Удалить блок и все ссылки на него
-     * @param {string} blockId - ID блока
+     * Удалить блок (и все ссылки на него)
+     * @param {string} blockId - ID блока для удаления
      * @returns {StateManager}
      */
     deleteBlock(blockId) {
-        const block = this.get('blocks').find(b => b.id === blockId);
-        if (!block) return this;
-        
-        // Удалить блок
-        this.update('blocks', blocks => blocks.filter(b => b.id !== blockId));
+        // Удалить блок из основного дерева
+        this.update('blocks', blocks => blocks.filter(block => block.id !== blockId));
         
         // Удалить все ссылки на этот блок из всех ролей
         const roles = this.get('roles');
         Object.keys(roles).forEach(roleId => {
-            this.update(`roles.${roleId}.references`, refs =>
-                refs.filter(ref => ref.blockId !== blockId)
+            this.update(`roles.${roleId}.references`, references =>
+                references.filter(ref => ref.blockId !== blockId)
             );
         });
         
-        // Удалить связи
+        // Удалить все связи с этим блоком
         this.update('connections', connections =>
             connections.filter(conn => 
-                conn.from !== blockId && conn.to !== blockId
+                conn.fromBlockId !== blockId && conn.toBlockId !== blockId
             )
         );
         
-        this.events.emit('block:deleted', { blockId, block });
-        return this;
-    }
-
-    /**
-     * Создать ссылку на блок в роли
-     * @param {string} roleId - ID роли
-     * @param {string} blockId - ID блока
-     * @param {Object} position - Позиция ссылки
-     * @returns {Object} - Созданная ссылка
-     */
-    createReference(roleId, blockId, position) {
-        const reference = {
-            id: this.generateId(),
-            blockId: blockId,
-            position: position || { x: 100, y: 100 },
-            createdAt: Date.now()
-        };
-        
-        this.update(`roles.${roleId}.references`, refs => [...refs, reference]);
-        
-        this.events.emit('reference:created', { roleId, blockId, reference });
-        return reference;
-    }
-
-    /**
-     * Обновить позицию ссылки
-     * @param {string} roleId - ID роли
-     * @param {string} referenceId - ID ссылки
-     * @param {Object} position - Новая позиция
-     * @returns {StateManager}
-     */
-    updateReference(roleId, referenceId, position) {
-        this.update(`roles.${roleId}.references`, refs =>
-            refs.map(ref =>
-                ref.id === referenceId
-                    ? { ...ref, position }
-                    : ref
-            )
-        );
-        
-        this.events.emit('reference:updated', { roleId, referenceId, position });
-        return this;
-    }
-
-    /**
-     * Удалить ссылку из роли
-     * @param {string} roleId - ID роли
-     * @param {string} referenceId - ID ссылки
-     * @returns {StateManager}
-     */
-    deleteReference(roleId, referenceId) {
-        const references = this.get(`roles.${roleId}.references`);
-        const reference = references.find(ref => ref.id === referenceId);
-        
-        this.update(`roles.${roleId}.references`, refs =>
-            refs.filter(ref => ref.id !== referenceId)
-        );
-        
-        this.events.emit('reference:deleted', { roleId, referenceId, reference });
+        this.events.emit('block:deleted', { blockId });
         return this;
     }
 
@@ -390,62 +330,150 @@ export class StateManager {
      * @returns {Object} - Созданная роль
      */
     createRole(roleData) {
-        const roleId = roleData.id || this.generateId();
         const role = {
-            id: roleId,
-            name: roleData.name,
+            id: roleData.id || this.generateId(),
+            name: roleData.name || 'Новая роль',
             icon: roleData.icon || '👤',
             references: [],
             createdAt: Date.now()
         };
         
-        this.set(`roles.${roleId}`, role);
+        this.set(`roles.${role.id}`, role);
         
-        this.events.emit('role:created', { roleId, role });
+        this.events.emit('role:created', role);
         return role;
     }
 
     /**
-     * Удалить роль (теперь любую роль можно удалить)
+     * Обновить роль
      * @param {string} roleId - ID роли
+     * @param {Object} updates - Обновления
+     * @returns {StateManager}
+     */
+    updateRole(roleId, updates) {
+        const role = this.get(`roles.${roleId}`);
+        if (role) {
+            this.set(`roles.${roleId}`, { ...role, ...updates });
+            this.events.emit('role:updated', { roleId, updates });
+        }
+        return this;
+    }
+
+    /**
+     * Удалить роль
+     * @param {string} roleId - ID роли для удаления
      * @returns {StateManager}
      */
     deleteRole(roleId) {
         const role = this.get(`roles.${roleId}`);
-        if (!role) {
-            console.warn(`Role not found: ${roleId}`);
-            return this;
-        }
+        if (!role) return this;
         
-        // Переключиться на основное дерево если удаляем активную роль
+        // Удалить роль
+        this.update('roles', roles => {
+            const newRoles = { ...roles };
+            delete newRoles[roleId];
+            return newRoles;
+        });
+        
+        // Если удаляемая роль была активной, переключиться на основное дерево
         if (this.get('ui.activeTab') === roleId) {
             this.set('ui.activeTab', 'main');
         }
-        
-        // Удалить роль
-        const roles = { ...this.get('roles') };
-        delete roles[roleId];
-        this.set('roles', roles);
         
         this.events.emit('role:deleted', { roleId, role });
         return this;
     }
 
     /**
-     * Переключить активную вкладку
-     * @param {string} tabId - ID вкладки ('main' или roleId)
+     * Создать ссылку на блок в роли
+     * @param {string} roleId - ID роли
+     * @param {string} blockId - ID блока
+     * @param {Object} position - Позиция ссылки {x, y}
+     * @returns {Object} - Созданная ссылка
+     */
+    createReference(roleId, blockId, position) {
+        const reference = {
+            id: this.generateId(),
+            blockId,
+            position: position || { x: 100, y: 100 },
+            createdAt: Date.now()
+        };
+        
+        this.update(`roles.${roleId}.references`, references => [...references, reference]);
+        
+        this.events.emit('reference:created', { roleId, blockId, reference });
+        return reference;
+    }
+
+    /**
+     * Обновить ссылку
+     * @param {string} roleId - ID роли
+     * @param {string} referenceId - ID ссылки
+     * @param {Object} updates - Обновления
      * @returns {StateManager}
      */
-    switchTab(tabId) {
-        const oldTab = this.get('ui.activeTab');
-        this.set('ui.activeTab', tabId);
+    updateReference(roleId, referenceId, updates) {
+        this.update(`roles.${roleId}.references`, references =>
+            references.map(ref =>
+                ref.id === referenceId ? { ...ref, ...updates } : ref
+            )
+        );
         
-        this.events.emit('tab:switched', { from: oldTab, to: tabId });
+        this.events.emit('reference:updated', { roleId, referenceId, updates });
         return this;
     }
 
     /**
-     * Генерация уникального ID
+     * Удалить ссылку
+     * @param {string} roleId - ID роли
+     * @param {string} referenceId - ID ссылки
+     * @returns {StateManager}
+     */
+    deleteReference(roleId, referenceId) {
+        this.update(`roles.${roleId}.references`, references =>
+            references.filter(ref => ref.id !== referenceId)
+        );
+        
+        this.events.emit('reference:deleted', { roleId, referenceId });
+        return this;
+    }
+
+    /**
+     * Создать связь между блоками
+     * @param {string} fromBlockId - ID исходного блока
+     * @param {string} toBlockId - ID целевого блока
+     * @returns {Object} - Созданная связь
+     */
+    createConnection(fromBlockId, toBlockId) {
+        const connection = {
+            id: this.generateId(),
+            fromBlockId,
+            toBlockId,
+            createdAt: Date.now()
+        };
+        
+        this.update('connections', connections => [...connections, connection]);
+        
+        this.events.emit('connection:created', connection);
+        return connection;
+    }
+
+    /**
+     * Удалить связь
+     * @param {string} connectionId - ID связи
+     * @returns {StateManager}
+     */
+    deleteConnection(connectionId) {
+        this.update('connections', connections =>
+            connections.filter(conn => conn.id !== connectionId)
+        );
+        
+        this.events.emit('connection:deleted', { connectionId });
+        return this;
+    }
+
+    /**
+     * Генерировать уникальный ID
      * @returns {string} - Уникальный ID
      */
     generateId() {
@@ -453,40 +481,11 @@ export class StateManager {
     }
 
     /**
-     * Получить статистику состояния v2.0
-     * @returns {Object} - Объект со статистикой
+     * Обновить значение по пути с помощью функции
+     * @param {string} path - Путь к значению
+     * @param {Function} updater - Функция обновления
+     * @returns {StateManager}
      */
-    getStats() {
-        const blocks = this.get('blocks');
-        const roles = this.get('roles');
-        const connections = this.get('connections');
-        
-        const totalReferences = Object.values(roles).reduce(
-            (sum, role) => sum + (role.references?.length || 0), 0
-        );
-        
-        return {
-            version: this.version,
-            historySize: this.history.length,
-            maxHistorySize: this.maxHistorySize,
-            stateSize: JSON.stringify(this.state).length,
-            debugMode: this.debugMode,
-            blocks: {
-                total: blocks.length,
-                withTags: blocks.filter(b => b.tags?.length > 0).length,
-                totalCharacters: blocks.reduce((sum, b) => sum + (b.content?.length || 0), 0)
-            },
-            roles: {
-                total: Object.keys(roles).length,
-                totalReferences
-            },
-            connections: {
-                total: connections.length
-            }
-        };
-    }
-
-    // Унаследованные методы из оригинального StateManager
     update(path, updater) {
         if (typeof updater !== 'function') {
             throw new Error('Updater must be a function');
@@ -503,6 +502,9 @@ export class StateManager {
         return this;
     }
 
+    /**
+     * Сохранить текущее состояние в историю
+     */
     saveToHistory() {
         const snapshot = JSON.parse(JSON.stringify(this.state));
         this.history.push({
@@ -515,6 +517,11 @@ export class StateManager {
         }
     }
 
+    /**
+     * Отменить изменения
+     * @param {number} steps - Количество шагов назад
+     * @returns {boolean} - Успешно ли выполнена операция
+     */
     undo(steps = 1) {
         if (this.history.length < steps) {
             console.warn('⚠️ Not enough history to undo');
@@ -542,11 +549,19 @@ export class StateManager {
         }
     }
 
+    /**
+     * Очистить историю изменений
+     * @returns {StateManager}
+     */
     clearHistory() {
         this.history = [];
         return this;
     }
 
+    /**
+     * Сброс состояния к начальному
+     * @returns {StateManager}
+     */
     reset() {
         this.state = this.getInitialState();
         this.clearHistory();
@@ -555,18 +570,40 @@ export class StateManager {
         return this;
     }
 
+    /**
+     * Получить копию текущего состояния
+     * @returns {Object} - Копия состояния
+     */
     getState() {
         return JSON.parse(JSON.stringify(this.state));
     }
 
+    /**
+     * Установить новое состояние (полная замена)
+     * ИСПРАВЛЕНИЕ: Добавлено событие state:replaced для уведомления модулей
+     * @param {Object} newState - Новое состояние
+     * @returns {StateManager}
+     */
     setState(newState) {
         this.saveToHistory();
         this.state = JSON.parse(JSON.stringify(newState));
         
-        this.events.emit('state:replaced', { newState });
+        // ИСПРАВЛЕНИЕ: Эмитировать событие о полной замене состояния
+        this.events.emit('state:replaced', { 
+            newState: this.state,
+            timestamp: Date.now()
+        });
+        
+        console.log('🔄 State completely replaced');
+        
         return this;
     }
 
+    /**
+     * Включить/выключить режим отладки
+     * @param {boolean} enabled - Включить отладку
+     * @returns {StateManager}
+     */
     setDebug(enabled = true) {
         this.debugMode = enabled;
         this.set('settings.debugMode', enabled);
@@ -574,6 +611,12 @@ export class StateManager {
         return this;
     }
 
+    /**
+     * Отслеживать изменения по пути
+     * @param {string} path - Путь для отслеживания
+     * @param {Function} callback - Функция обратного вызова
+     * @returns {Function} - Функция отписки
+     */
     watch(path, callback) {
         const handler = (data) => {
             if (data.path === path || data.path.startsWith(path + '.')) {
@@ -584,5 +627,39 @@ export class StateManager {
         this.events.on('state:change', handler);
         
         return () => this.events.off('state:change', handler);
+    }
+
+    /**
+     * Получить статистику состояния
+     * @returns {Object} - Статистика
+     */
+    getStats() {
+        const blocks = this.get('blocks') || [];
+        const roles = this.get('roles') || {};
+        const connections = this.get('connections') || [];
+        
+        const totalReferences = Object.values(roles).reduce(
+            (sum, role) => sum + (role.references?.length || 0), 0
+        );
+        
+        return {
+            version: this.version,
+            historySize: this.history.length,
+            maxHistorySize: this.maxHistorySize,
+            stateSize: JSON.stringify(this.state).length,
+            debugMode: this.debugMode,
+            blocks: {
+                total: blocks.length,
+                withTags: blocks.filter(b => b.tags?.length > 0).length,
+                totalCharacters: blocks.reduce((sum, b) => sum + (b.content?.length || 0), 0)
+            },
+            roles: {
+                total: Object.keys(roles).length,
+                totalReferences
+            },
+            connections: {
+                total: connections.length
+            }
+        };
     }
 }

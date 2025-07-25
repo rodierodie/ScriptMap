@@ -1,6 +1,7 @@
 /**
  * Migration Module - Миграция данных между версиями
  * Обеспечивает обратную совместимость v1.0 → v2.0
+ * FIXED: Сохранение ролей из проекта при миграции
  */
 export class MigrationModule {
     constructor(state, events) {
@@ -34,6 +35,7 @@ export class MigrationModule {
 
     /**
      * Автоматическая миграция данных при загрузке
+     * ИСПРАВЛЕНИЕ: Улучшенная обработка проектов v2.0
      * @param {Object} data - Загружаемые данные
      * @returns {Object} - Мигрированные данные
      */
@@ -46,6 +48,11 @@ export class MigrationModule {
         console.log(`📊 Detected data version: ${version}`);
 
         if (version === this.currentVersion) {
+            // ИСПРАВЛЕНИЕ: Для данных v2.0 проверяем что роли не пустые
+            if (data.roles && Object.keys(data.roles).length === 0) {
+                console.log('⚠️ Empty roles object detected, adding default roles');
+                data.roles = this.getDefaultRoles();
+            }
             return data; // Данные уже в актуальной версии
         }
 
@@ -71,6 +78,7 @@ export class MigrationModule {
 
     /**
      * Определить версию данных
+     * ИСПРАВЛЕНИЕ: Улучшенное определение версии для проектов
      * @param {Object} data - Данные для анализа
      * @returns {string} - Версия данных
      */
@@ -84,8 +92,13 @@ export class MigrationModule {
             return '1.0'; // Старый формат с массивом notes
         }
 
+        // ИСПРАВЛЕНИЕ: Улучшенное определение v2.0
+        if (data.blocks && Array.isArray(data.blocks) && data.roles && typeof data.roles === 'object') {
+            return '2.0'; // Новый формат с блоками и ролями
+        }
+
         if (data.blocks && Array.isArray(data.blocks)) {
-            return '2.0'; // Новый формат с блоками
+            return '2.0'; // Новый формат с блоками (даже без ролей)
         }
 
         return '1.0'; // По умолчанию считаем старой версией
@@ -93,6 +106,7 @@ export class MigrationModule {
 
     /**
      * Миграция с версии 1.0 на 2.0
+     * ИСПРАВЛЕНИЕ: Сохраняем роли из проекта если они есть
      * @param {Object} v1Data - Данные v1.0
      * @returns {Object} - Данные v2.0
      */
@@ -102,7 +116,8 @@ export class MigrationModule {
         const v2Data = {
             version: "2.0",
             blocks: [],
-            roles: this.getDefaultRoles(),
+            // ИСПРАВЛЕНИЕ: Используем роли из проекта если есть, иначе дефолтные
+            roles: v1Data.roles || this.getDefaultRoles(),
             connections: v1Data.connections || [],
             ui: {
                 activeTab: "main",
@@ -112,7 +127,8 @@ export class MigrationModule {
             migrationInfo: {
                 migratedAt: Date.now(),
                 fromVersion: "1.0",
-                originalNotesCount: v1Data.notes?.length || 0
+                originalNotesCount: v1Data.notes?.length || 0,
+                preservedRoles: !!v1Data.roles // Флаг сохранения ролей
             }
         };
 
@@ -120,6 +136,13 @@ export class MigrationModule {
         if (v1Data.notes && Array.isArray(v1Data.notes)) {
             v2Data.blocks = v1Data.notes.map(note => this.convertNoteToBlock(note));
             console.log(`📝 Converted ${v1Data.notes.length} notes to blocks`);
+        }
+
+        // ИСПРАВЛЕНИЕ: Логирование сохранения ролей
+        if (v1Data.roles) {
+            console.log(`👥 Preserved ${Object.keys(v1Data.roles).length} roles from project`);
+        } else {
+            console.log(`👥 Using default roles (3 roles)`);
         }
 
         // Валидация данных
@@ -193,10 +216,28 @@ export class MigrationModule {
             blocks: [],
             roles: this.getDefaultRoles(),
             connections: [],
+            canvas: {
+                transform: { x: 0, y: 0 },
+                isDragging: false,
+                isPanning: false,
+                zoom: 1
+            },
             ui: {
                 activeTab: "main",
                 theme: "light",
-                paletteOpen: false
+                paletteOpen: false,
+                instructionsVisible: false
+            },
+            interaction: {
+                isSpacePressed: false,
+                dragItem: null,
+                dragOffset: { x: 0, y: 0 },
+                panStart: { x: 0, y: 0 }
+            },
+            settings: {
+                autoSave: true,
+                debugMode: false,
+                version: "2.0"
             }
         };
     }
@@ -283,68 +324,114 @@ export class MigrationModule {
      * Получить информацию о миграциях
      * @returns {Object} - Информация о доступных миграциях
      */
-    getMigrationInfo() {
+    getMigrationsInfo() {
+        const migrations = Array.from(this.migrations.values());
+        
         return {
             currentVersion: this.currentVersion,
             supportedVersions: ['1.0', '2.0'],
-            availableMigrations: Array.from(this.migrations.keys()),
-            migrationPaths: {
-                '1.0': ['2.0'],
-                '2.0': []
-            }
+            availableMigrations: migrations.map(m => ({
+                from: m.from,
+                to: m.to,
+                key: `${m.from}->${m.to}`
+            })),
+            totalMigrations: migrations.length
         };
     }
 
     /**
-     * Создать резервную копию перед миграцией
-     * @param {Object} data - Данные для бэкапа
+     * Создать резервную копию данных
+     * @param {Object} data - Данные для резервирования
      * @returns {string} - Ключ резервной копии
      */
     createBackup(data) {
-        const backupKey = `notes-app-backup-${Date.now()}`;
+        const backupKey = `backup-${Date.now()}`;
+        const backupData = {
+            data,
+            timestamp: Date.now(),
+            version: data.version || 'unknown'
+        };
+        
         try {
-            localStorage.setItem(backupKey, JSON.stringify(data));
-            console.log(`💾 Backup created: ${backupKey}`);
+            localStorage.setItem(backupKey, JSON.stringify(backupData));
+            console.log(`💾 Created backup: ${backupKey}`);
             return backupKey;
         } catch (error) {
-            console.warn('⚠️ Could not create backup:', error);
+            console.error('❌ Failed to create backup:', error);
             return null;
         }
     }
 
     /**
-     * Восстановить из резервной копии
-     * @param {string} backupKey - Ключ резервной копии
-     * @returns {Object|null} - Восстановленные данные
+     * Получить список резервных копий
+     * @returns {Array} - Список резервных копий
      */
-    restoreBackup(backupKey) {
-        try {
-            const data = localStorage.getItem(backupKey);
-            if (data) {
-                console.log(`🔄 Restored from backup: ${backupKey}`);
-                return JSON.parse(data);
+    getBackups() {
+        const backups = [];
+        
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('backup-')) {
+                try {
+                    const backupData = JSON.parse(localStorage.getItem(key));
+                    backups.push({
+                        key,
+                        timestamp: backupData.timestamp,
+                        version: backupData.version,
+                        date: new Date(backupData.timestamp).toLocaleString()
+                    });
+                } catch (error) {
+                    console.warn(`⚠️ Invalid backup: ${key}`);
+                }
             }
-        } catch (error) {
-            console.error('❌ Failed to restore backup:', error);
         }
-        return null;
+        
+        return backups.sort((a, b) => b.timestamp - a.timestamp);
     }
 
     /**
      * Очистить старые резервные копии
-     * @param {number} maxAge - Максимальный возраст в днях
+     * @param {number} maxAge - Максимальный возраст в днях (по умолчанию 7)
      */
-    cleanupOldBackups(maxAge = 7) {
+    cleanupBackups(maxAge = 7) {
         const cutoffTime = Date.now() - (maxAge * 24 * 60 * 60 * 1000);
+        const backups = this.getBackups();
+        let deletedCount = 0;
         
-        Object.keys(localStorage).forEach(key => {
-            if (key.startsWith('notes-app-backup-')) {
-                const timestamp = parseInt(key.split('-').pop());
-                if (timestamp < cutoffTime) {
-                    localStorage.removeItem(key);
-                    console.log(`🗑️ Removed old backup: ${key}`);
-                }
+        backups.forEach(backup => {
+            if (backup.timestamp < cutoffTime) {
+                localStorage.removeItem(backup.key);
+                deletedCount++;
             }
         });
+        
+        if (deletedCount > 0) {
+            console.log(`🧹 Cleaned up ${deletedCount} old backups`);
+        }
+    }
+
+    /**
+     * Получить статистику модуля
+     * @returns {Object} - Статистика
+     */
+    getStats() {
+        const backups = this.getBackups();
+        
+        return {
+            currentVersion: this.currentVersion,
+            supportedVersions: ['1.0', '2.0'],
+            totalMigrations: this.migrations.size,
+            backupsCount: backups.length,
+            oldestBackup: backups.length > 0 ? backups[backups.length - 1].date : null,
+            newestBackup: backups.length > 0 ? backups[0].date : null
+        };
+    }
+
+    /**
+     * Уничтожение модуля
+     */
+    destroy() {
+        this.migrations.clear();
+        console.log('🗑️ Migration module destroyed');
     }
 }
