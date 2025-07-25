@@ -1,0 +1,62 @@
+name: Deploy to reg.ru
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js (if needed for build)
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    # Опционально: минификация CSS/JS
+    - name: Build and optimize (optional)
+      run: |
+        # Создать папку dist
+        mkdir -p dist
+        
+        # Копировать HTML файлы
+        cp *.html dist/
+        
+        # Минификация CSS (если есть npm)
+        # npm install -g clean-css-cli
+        # cleancss -o dist/css/main.css css/main.css
+        
+        # Пока просто копируем все файлы
+        cp -r css dist/
+        cp -r modules dist/
+        cp -r js dist/ || true
+        
+        # Список файлов для проверки
+        ls -la dist/
+    
+    - name: Deploy to FTP
+      uses: SamKirkland/FTP-Deploy-Action@4.3.3
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: ./
+        server-dir: /public_html/
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
+          **/.github/**
+          **/README.md
+          **/.DS_Store
+    
+    - name: Notify deployment
+      run: |
+        echo "✅ Deployment completed to lineflow.xyz"
+        echo "🕒 Deployed at: $(date)"
