@@ -1,6 +1,7 @@
 /**
  * UI Module v2.0 - Управление пользовательским интерфейсом с поддержкой вкладок
  * Обновлено: убрана логика управления темами (вынесена в ThemeManager)
+ * ИЗМЕНЕНО: Темная тема по умолчанию
  */
 
 // ThemeManager будет создаваться динамически для избежания конфликтов импорта
@@ -32,7 +33,7 @@ export class UIModule {
     createThemeManager(state, events) {
         // Простой менеджер тем встроенный в UI модуль
         return {
-            currentTheme: 'light',
+            currentTheme: 'dark', // ИЗМЕНЕНО: темная тема по умолчанию
             
             init() {
                 this.loadThemeFromStorage();
@@ -44,9 +45,13 @@ export class UIModule {
                     const savedTheme = localStorage.getItem('notes-app-theme');
                     if (savedTheme && ['light', 'dark'].includes(savedTheme)) {
                         this.currentTheme = savedTheme;
+                    } else {
+                        // ИЗМЕНЕНО: если нет сохраненной темы, используем темную по умолчанию
+                        this.currentTheme = 'dark';
                     }
                 } catch (error) {
                     console.warn('Could not load theme from localStorage:', error);
+                    this.currentTheme = 'dark'; // ИЗМЕНЕНО: fallback на темную тему
                 }
             },
             
@@ -93,6 +98,13 @@ export class UIModule {
                     border: 1px solid var(--border-medium);
                     color: var(--text-secondary);
                     font-size: var(--font-lg);
+                    min-width: 40px;
+                    height: 36px;
+                    border-radius: var(--radius-md);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: var(--transition-all);
                 `;
                 
                 const updateToggle = () => {
@@ -104,7 +116,21 @@ export class UIModule {
                     this.toggleTheme();
                 });
                 
+                toggle.addEventListener('mouseenter', () => {
+                    toggle.style.background = 'var(--color-primary-light)';
+                    toggle.style.borderColor = 'var(--color-primary)';
+                    toggle.style.color = 'var(--color-primary)';
+                });
+                
+                toggle.addEventListener('mouseleave', () => {
+                    toggle.style.background = 'var(--bg-secondary)';
+                    toggle.style.borderColor = 'var(--border-medium)';
+                    toggle.style.color = 'var(--text-secondary)';
+                });
+                
+                // Обновлять при изменении темы
                 events.on('theme:changed', updateToggle);
+                
                 updateToggle();
                 container.appendChild(toggle);
                 
@@ -158,7 +184,8 @@ export class UIModule {
             <strong>🎯 Система ролей v2.0:</strong> Ctrl+1 = Основное дерево • Ctrl+2,3,4 = Роли • Ctrl+T = новая роль<br>
             <strong>🔗 Связи:</strong> Ctrl+C = создать связь между блоками • Наведите на линию для удаления<br>
             <strong>📝 Блоки:</strong> Пробел + мышь = перемещение холста • Двойной клик = новый блок • "Открыть" для редактирования<br>
-            <strong>⌨️ Горячие клавиши:</strong> Ctrl+E = экспорт • Ctrl+R = статистика • ? = показать/скрыть помощь
+            <strong>⌨️ Горячие клавиши:</strong> Ctrl+E = экспорт • Ctrl+R = статистика • ? = показать/скрыть помощь<br>
+            <strong>🎨 Тема:</strong> Кнопка в заголовке или Ctrl+Shift+T = переключить тему
         `;
         document.body.appendChild(this.elements.instructions);
 
@@ -278,14 +305,16 @@ export class UIModule {
                 <strong>🌳 Основное дерево:</strong> Создание и редактирование всех блоков<br>
                 <strong>🔗 Связи:</strong> Ctrl+C = создать связь между блоками • Наведите на линию для удаления<br>
                 <strong>📝 Блоки:</strong> Пробел + мышь = перемещение • Двойной клик = новый блок • + = создать блок<br>
-                <strong>⌨️ Роли:</strong> Ctrl+2,3,4 = переключение ролей • Ctrl+T = новая роль
+                <strong>⌨️ Роли:</strong> Ctrl+2,3,4 = переключение ролей • Ctrl+T = новая роль<br>
+                <strong>🎨 Тема:</strong> Кнопка в заголовке или Ctrl+Shift+T = переключить тему
             `;
         } else {
             instructionsHTML = `
                 <strong>👤 Роль "${context.role?.name || 'роль'}":</strong> Компоновка блоков для конкретных пользователей<br>
                 <strong>🎨 Палитра:</strong> + = открыть палитру блоков • Выберите блоки из основного дерева<br>
                 <strong>🔗 Ссылки:</strong> Связи между блоками видны во всех ролях<br>
-                <strong>⌨️ Навигация:</strong> Ctrl+1 = основное дерево • Ctrl+T = новая роль
+                <strong>⌨️ Навигация:</strong> Ctrl+1 = основное дерево • Ctrl+T = новая роль<br>
+                <strong>🎨 Тема:</strong> Кнопка в заголовке или Ctrl+Shift+T = переключить тему
             `;
         }
         
@@ -468,6 +497,7 @@ export class UIModule {
                 `👥 Роли: ${Object.keys(roles).length}`,
                 `📎 Ссылки: ${totalReferences}`,
                 `🔗 Связи: ${connections.length}`,
+                `🎨 Тема: ${this.themeManager.getCurrentTheme()}`,
                 ``,
                 `💡 Ctrl+R = полная статистика приложения`
             ].join('\n');

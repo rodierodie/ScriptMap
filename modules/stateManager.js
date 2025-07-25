@@ -2,6 +2,7 @@
  * State Manager v2.0 - Централизованное управление состоянием приложения
  * Поддержка новой структуры данных с блоками и ролями
  * FIXED: Добавлено событие state:replaced при полной замене состояния
+ * ИЗМЕНЕНО: Темная тема по умолчанию
  */
 export class StateManager {
     constructor(events) {
@@ -15,6 +16,7 @@ export class StateManager {
 
     /**
      * Получить начальное состояние приложения v2.0
+     * ИЗМЕНЕНО: Темная тема по умолчанию
      * @returns {Object} - Начальное состояние
      */
     getInitialState() {
@@ -64,7 +66,7 @@ export class StateManager {
             ui: {
                 activeTab: 'main',           // main | roleId
                 instructionsVisible: false,
-                theme: 'light',
+                theme: 'dark',               // ИЗМЕНЕНО: темная тема по умолчанию
                 paletteOpen: false
             },
             
@@ -648,6 +650,7 @@ export class StateManager {
             maxHistorySize: this.maxHistorySize,
             stateSize: JSON.stringify(this.state).length,
             debugMode: this.debugMode,
+            currentTheme: this.get('ui.theme') || 'dark', // ДОБАВЛЕНО
             blocks: {
                 total: blocks.length,
                 withTags: blocks.filter(b => b.tags?.length > 0).length,

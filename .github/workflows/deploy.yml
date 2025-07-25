@@ -25,17 +25,16 @@ jobs:
         # Создать папку dist
         mkdir -p dist
         
-        # Копировать HTML файлы
-        cp *.html dist/
+        # Копировать все файлы проекта lineflow
+        cp *.html dist/ 2>/dev/null || true
+        cp *.js dist/ 2>/dev/null || true
+        cp -r css dist/ 2>/dev/null || true
+        cp -r modules dist/ 2>/dev/null || true
+        cp -r js dist/ 2>/dev/null || true
+        cp -r assets dist/ 2>/dev/null || true
         
-        # Минификация CSS (если есть npm)
-        # npm install -g clean-css-cli
-        # cleancss -o dist/css/main.css css/main.css
-        
-        # Пока просто копируем все файлы
-        cp -r css dist/
-        cp -r modules dist/
-        cp -r js dist/ || true
+        # Убедиться что основные файлы скопированы
+        ls -la dist/
         
         # Список файлов для проверки
         ls -la dist/

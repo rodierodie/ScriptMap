@@ -2,6 +2,7 @@
  * Migration Module - Миграция данных между версиями
  * Обеспечивает обратную совместимость v1.0 → v2.0
  * FIXED: Сохранение ролей из проекта при миграции
+ * ИЗМЕНЕНО: Темная тема по умолчанию
  */
 export class MigrationModule {
     constructor(state, events) {
@@ -52,6 +53,13 @@ export class MigrationModule {
             if (data.roles && Object.keys(data.roles).length === 0) {
                 console.log('⚠️ Empty roles object detected, adding default roles');
                 data.roles = this.getDefaultRoles();
+            }
+            // ИЗМЕНЕНО: Убеждаемся что тема установлена как темная если не указана
+            if (!data.ui) {
+                data.ui = {};
+            }
+            if (!data.ui.theme) {
+                data.ui.theme = 'dark';
             }
             return data; // Данные уже в актуальной версии
         }
@@ -107,6 +115,7 @@ export class MigrationModule {
     /**
      * Миграция с версии 1.0 на 2.0
      * ИСПРАВЛЕНИЕ: Сохраняем роли из проекта если они есть
+     * ИЗМЕНЕНО: Темная тема по умолчанию
      * @param {Object} v1Data - Данные v1.0
      * @returns {Object} - Данные v2.0
      */
@@ -121,7 +130,7 @@ export class MigrationModule {
             connections: v1Data.connections || [],
             ui: {
                 activeTab: "main",
-                theme: v1Data.ui?.theme || "light",
+                theme: v1Data.ui?.theme || "dark", // ИЗМЕНЕНО: темная тема по умолчанию
                 paletteOpen: false
             },
             migrationInfo: {
@@ -208,6 +217,7 @@ export class MigrationModule {
 
     /**
      * Получить начальное состояние v2.0
+     * ИЗМЕНЕНО: Темная тема по умолчанию
      * @returns {Object} - Чистое состояние v2.0
      */
     getInitialV2State() {
@@ -224,7 +234,7 @@ export class MigrationModule {
             },
             ui: {
                 activeTab: "main",
-                theme: "light",
+                theme: "dark", // ИЗМЕНЕНО: темная тема по умолчанию
                 paletteOpen: false,
                 instructionsVisible: false
             },
@@ -285,6 +295,15 @@ export class MigrationModule {
             errors.push('Connections must be an array');
         }
 
+        // Проверка UI (включая тему)
+        if (!data.ui || typeof data.ui !== 'object') {
+            errors.push('UI configuration must be an object');
+        } else {
+            if (!['light', 'dark'].includes(data.ui.theme)) {
+                errors.push(`Invalid theme: ${data.ui.theme}`);
+            }
+        }
+
         if (errors.length > 0) {
             throw new Error(`Validation failed: ${errors.join(', ')}`);
         }
@@ -305,7 +324,8 @@ export class MigrationModule {
             exportMeta: {
                 blocksCount: data.blocks?.length || 0,
                 rolesCount: Object.keys(data.roles || {}).length,
-                connectionsCount: data.connections?.length || 0
+                connectionsCount: data.connections?.length || 0,
+                theme: data.ui?.theme || 'dark'
             }
         };
     }
@@ -335,7 +355,8 @@ export class MigrationModule {
                 to: m.to,
                 key: `${m.from}->${m.to}`
             })),
-            totalMigrations: migrations.length
+            totalMigrations: migrations.length,
+            defaultTheme: 'dark' // ДОБАВЛЕНО: информация о теме по умолчанию
         };
     }
 
@@ -349,7 +370,8 @@ export class MigrationModule {
         const backupData = {
             data,
             timestamp: Date.now(),
-            version: data.version || 'unknown'
+            version: data.version || 'unknown',
+            theme: data.ui?.theme || 'dark'
         };
         
         try {
@@ -378,6 +400,7 @@ export class MigrationModule {
                         key,
                         timestamp: backupData.timestamp,
                         version: backupData.version,
+                        theme: backupData.theme || 'unknown',
                         date: new Date(backupData.timestamp).toLocaleString()
                     });
                 } catch (error) {
@@ -419,6 +442,7 @@ export class MigrationModule {
         
         return {
             currentVersion: this.currentVersion,
+            defaultTheme: 'dark', // ДОБАВЛЕНО
             supportedVersions: ['1.0', '2.0'],
             totalMigrations: this.migrations.size,
             backupsCount: backups.length,

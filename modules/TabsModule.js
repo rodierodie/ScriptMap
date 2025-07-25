@@ -2,6 +2,7 @@
  * Tabs Module - Управление системой вкладок и ролей
  * v2.0 - Поддержка удаления всех ролей с подтверждением
  * v2.1 - Полная система сохранения и загрузки проектов
+ * v2.2 - Добавлена кнопка переключения темы
  * FIXED: Принудительный перерендер после загрузки проекта
  */
 export class TabsModule {
@@ -13,6 +14,7 @@ export class TabsModule {
         this.deleteConfirmModal = null;
         this.loadConfirmModal = null;
         this.pendingProjectData = null;
+        this.themeToggleBtn = null;
         
         this.init();
     }
@@ -58,6 +60,10 @@ export class TabsModule {
                     <button class="project-btn load-project-btn" id="loadProjectBtn" title="Загрузить проект">
                         <span class="btn-icon">📁</span>
                         <span class="btn-text">Загрузить</span>
+                    </button>
+                    <button class="project-btn theme-toggle-btn" id="themeToggleBtn" title="Переключить тему">
+                        <span class="btn-icon">🌙</span>
+                        <span class="btn-text">Тема</span>
                     </button>
                 </div>
             </div>
@@ -225,6 +231,13 @@ export class TabsModule {
         saveProjectBtn.addEventListener('click', () => this.saveProject());
         loadProjectBtn.addEventListener('click', () => this.loadProject());
 
+        // Кнопка переключения темы
+        this.themeToggleBtn = document.getElementById('themeToggleBtn');
+        this.themeToggleBtn.addEventListener('click', () => this.toggleTheme());
+
+        // Инициализировать кнопку темы
+        this.updateThemeButton();
+
         // События модального окна создания роли
         this.setupRoleModalEvents();
         
@@ -252,6 +265,58 @@ export class TabsModule {
         this.events.on('block:deleted', () => this.updateTabCounts());
         this.events.on('reference:created', () => this.updateTabCounts());
         this.events.on('reference:deleted', () => this.updateTabCounts());
+
+        // События изменения темы
+        this.events.on('theme:changed', () => this.updateThemeButton());
+    }
+
+    /**
+     * Переключить тему
+     */
+    toggleTheme() {
+        // Получить UI модуль через глобальный объект приложения
+        if (window.app && window.app.modules && window.app.modules.ui) {
+            window.app.modules.ui.themeManager.toggleTheme();
+            
+            // Показать уведомление
+            const currentTheme = window.app.modules.ui.themeManager.getCurrentTheme();
+            const themeName = currentTheme === 'dark' ? 'темную' : 'светлую';
+            
+            this.events.emit('ui:show-notification', {
+                message: `Переключено на ${themeName} тему`,
+                type: 'info',
+                duration: 2000
+            });
+        } else {
+            console.warn('UI module not available for theme toggle');
+        }
+    }
+
+    /**
+     * Обновить кнопку темы
+     */
+    updateThemeButton() {
+        if (!this.themeToggleBtn) return;
+
+        // Получить текущую тему
+        let currentTheme = 'dark'; // по умолчанию
+        if (window.app && window.app.modules && window.app.modules.ui) {
+            currentTheme = window.app.modules.ui.themeManager.getCurrentTheme();
+        }
+
+        // Обновить иконку и подсказку
+        const iconElement = this.themeToggleBtn.querySelector('.btn-icon');
+        const textElement = this.themeToggleBtn.querySelector('.btn-text');
+        
+        if (iconElement) {
+            iconElement.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+        }
+        
+        if (textElement) {
+            textElement.textContent = currentTheme === 'dark' ? 'Светлая' : 'Темная';
+        }
+        
+        this.themeToggleBtn.title = `Переключить на ${currentTheme === 'dark' ? 'светлую' : 'темную'} тему`;
     }
 
     /**
@@ -294,6 +359,7 @@ export class TabsModule {
         setTimeout(() => {
             this.renderTabs();
             this.updateTabCounts();
+            this.updateThemeButton(); // Обновить кнопку темы тоже
         }, 50);
     }
 
@@ -318,6 +384,9 @@ export class TabsModule {
         
         // Обновить счетчики
         this.updateTabCounts();
+        
+        // Обновить кнопку темы
+        this.updateThemeButton();
     }
 
     /**
@@ -572,6 +641,7 @@ export class TabsModule {
                     blocksCount: currentState.blocks?.length || 0,
                     rolesCount: Object.keys(currentState.roles || {}).length,
                     connectionsCount: currentState.connections?.length || 0,
+                    theme: currentState.ui?.theme || 'dark',
                     appVersion: "2.0"
                 }
             };
@@ -1037,6 +1107,13 @@ export class TabsModule {
             return;
         }
 
+        // Ctrl + Shift + T - переключить тему
+        if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+            e.preventDefault();
+            this.toggleTheme();
+            return;
+        }
+
         // Переключение вкладок
         if (e.ctrlKey && e.key >= '1' && e.key <= '9') {
             e.preventDefault();
@@ -1115,7 +1192,8 @@ export class TabsModule {
             allRolesDeletable: true,
             projectActionsAvailable: true,
             projectSaveImplemented: true,
-            projectLoadImplemented: true // Теперь реализовано!
+            projectLoadImplemented: true,
+            themeToggleImplemented: true // ДОБАВЛЕНО
         };
     }
 
